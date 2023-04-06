@@ -1,0 +1,1049 @@
+/* HINTS
+    udg_HE_HashKey      INT(INTEGER) => AbilityId, UnitTypeId it's special key for values below V [ALL]
+    udg_HE_HP           FLOAT(REAL)  => Full HP for heal [REJUVENATION, HEAL, WAVE ]
+    udg_HE_Percentage   FLOAT(REAL)  => Rate for heal, decreasing for healwave, percantage heal from ward and etc.. [ WARD, HEAL, WAVE ]
+    udg_HE_Type         INT(INTEGER) => Type Heal Engine see "Special Constants" [ALL]
+    udg_HE_Time         FLOAT(REAL)  => Time for heal, Rejuvenation especially [REJUVENATION ONLY]
+    udg_HE_Buff         INT(INTEGER) => Buff of Heal [REJUVENATION ONLY]
+    udg_HE_Effect       (CHAR)STRING => Effect for ward, heal, wave [ WARD, HEAL, WAVE ]
+    udg_HE_BeamFirst    (CHAR)STRING => Lightning  healing wave [ WAVE ]
+    udg_HE_BeamSecond   (CHAR)STRING => Lightning  healing wave [ WAVE ]
+    udg_HE_Jumps        INT(INTEGER) => Jump counts healing wave [ WAVE ]
+    udg_HE_Level        INT(INTEGER) => Level Perk
+    HealedEngine_Add()  FUNCTION()   => RegisterHeal at HealedEngine()
+    СС: call HealedEngine_Add()
+
+    ::For Custom Heal::
+    CC: HealedEngine_HealUnit( unit: source, target, real: amount, boolean: isPercentage  ) // isPercentage recommended false
+ */
+
+
+library HealedEngine requires NV2Stats
+    // Uses udg_CR_Game_Healed[]
+    // Uses udg_CR_Game_Heals[]
+    globals
+        public      trigger     Trigger                     = null
+        public      trigger     Trigger_Z                   = null // _Z means two (2)
+                    hashtable   HEHash                      = InitHashtable()
+                    group       HEGroup                     = null
+                    unit        HEUnit                      = null
+                    group       HEWoundeds                  = null
+                    integer     HEGroupSize                 = 0
+                    integer     HEGroupIndex                = 0
+                    boolean     HETextTagsOn                = true // togglerof texttags for HealedEngine
+        private     location    PointLoc                    = Location(0,0)
+        // Special Constants 
+        constant    integer     HE_TYPE_WARD                = 0
+        constant    integer     HE_TYPE_REJUVENATION        = 1
+        constant    integer     HE_TYPE_HEAL                = 2
+        constant    integer     HE_TYPE_HEALING_WAVE        = 3
+        constant    integer     HE_TYPE_ROAR                = 4
+        constant    integer     HE_TYPE_HEALING_GAS         = 5
+        constant    integer     HE_TYPE_CURE_WAVE           = 6
+        
+        // Constants for Hashtable of Perks
+        constant    integer     HE_LEVEL_RATE                = 20 // 1 - 0, 2 - 20, 3 - 40
+
+        constant    integer     HE_INT_TYPE                 = 8  // INT
+
+        
+        constant    real        HEALING_WAVE_INV            = 0.25 // Setting Inveral for Healing Wave betweens Jumps
+
+        constant    integer    HE_HEALING_WAVE_KEY          = 0 // INT: Especial Key
+        constant    integer    HE_HEALING_WAVE_TOOKS        = 1 // INT: Jumps count of Healing Wave
+        constant    integer    HE_HEALING_WAVE_HEAL         = 0 // FLOAT: Heal per Touch
+        constant    integer    HE_HEALING_WAVE_RATE         = 1 // FLOAT: Decreasing Heal per Touch in Percents
+        constant    integer    HE_HEALING_WAVE_LOC_X        = 2 // FLOAT: Position Healing Detector X
+        constant    integer    HE_HEALING_WAVE_LOC_Y        = 3 // FLOAT: Position Healing Detector Y
+        constant    integer    HE_HEALING_WAVE_RADIUS       = 4 // FLOAT: Healing Detector Radius
+        constant    integer    HE_HEALING_WAVE_BEAM         = 0 // STRING: First Beam 
+        constant    integer    HE_HEALING_WAVE_BEAM_Z       = 1 // STRING: Next Beam
+        constant    integer    HE_HEALING_WAVE_EFFECT       = 2 // STRING: Model's patch of Effectc
+        constant    integer    HE_HEALING_WAVE_GROUP        = 1 // HANDLE: ??? ofk
+        constant    integer    HE_HEALING_WAVE_LAST         = 2 // HANDLE: ??? ofk
+
+
+        constant    integer    HE_REJUVENATION_BUFF         = 0
+        constant    integer    HE_REJUVENATION_TICK         = 1
+        constant    integer    HE_REJUVENATION_HEALER       = 0
+        constant    integer    HE_REJUVENATION_HEALED       = 1
+        constant    integer    HE_REJUVENATION_RATE         = 0
+        constant    integer    HE_REJUVENATION_RESTORE      = 1
+        constant    integer    HE_REJUVENATION_TIME         = 2
+
+        constant    integer    HE_HEAL_VALUE                = 0 // FLOAT: Heal Value
+        constant    integer    HE_HEAL_BOOST                = 1 // FLOAT: Percentage Heal of Target
+        constant    integer    HE_HEAL_EFFECT               = 0 // FLOAT: Effect with Heal = )
+
+
+        constant    integer     HE_WARD_UNIT                = 0 // HANDLE: Ward
+        constant    integer     HE_WARD_OWNER               = 1 // HANDLE: Player, who paced same ward
+        constant    integer     HE_WARD_TICK                = 0 // INT: Ticks for mass heal from ward
+        constant    integer     HE_WARD_HEAL_PERENTAGE      = 0 // FLOAT: Percentage heal
+        constant    integer     HE_WARD_LOCATION_X          = 1 // FLOAT: Ward Location at X
+        constant    integer     HE_WARD_LOCATION_Y          = 2 // FLOAT: Ward Location at Y
+        constant    integer     HE_WARD_RADIUS              = 3 // FLOAT: Heal radius of ward
+        constant    integer     HE_WARD_EXTRA_HPERCENT      = 4 // For Extra Percentage Heal
+        constant    integer     HE_WARD_HEAL_CAP            = 3 // HANDLE: Group cap for Texttag and ScoreBoard 
+
+        constant    integer     HE_WARD_EFFECT              = 0 // STRING: Effect of heal buff
+
+        constant    integer     HE_ROAR_GROUP               = 0 // HANDLE:  ???
+        constant    integer     HE_ROAR_OWNER               = 1 // INT:     ??? T_T
+        constant    integer     HE_ROAR_HPS                 = 0 // FLOAT:   ( ` Д ` )/*
+        constant    integer     HE_ROAR_RADIUS              = 1 // FLOAT:   ( ` Д ` )/*
+        constant    integer     HE_ROAR_SEXY_BUFF           = 0 // INT:     ( + 3 + ) * 
+
+        constant    integer     HE_HEALING_GAS_HEAL         = 0 // FLOAT   : Heal amount per missile
+        constant    integer     HE_HEALING_GAS_X            = 1 // FLOAT   : Targer X
+        constant    integer     HE_HEALING_GAS_Y            = 2 // FLOAT   : Target Y
+        constant    integer     HE_HEALING_GAS_RADIUS       = 3 // FLOAT   : Impact Distantion 35% radius from missile
+        constant    integer     HE_HEALING_GAS_SAFE_DIST    = 4 // FLOAT   : For Missiles only
+        constant    integer     HE_HEALING_GAS_HEALER       = 0 // HADNLE  : Unit Healer
+        constant    integer     HE_HEALING_GAS_MISSILE      = 1 // HANDLE  : Effect
+        constant    integer     HE_HEALING_GAS_EFFECT       = 0 // STRING  : Missile File Model
+        constant    integer     HE_HEALING_GAS_MISSILES     = 0 // INTEGER : Missiles Count
+        constant    integer     HE_HEALING_GAS_IMPACT       = 1 // INTEGER : Tick Impact
+
+    endglobals
+    
+    private function ParabolaZ takes real h, real d, real x returns real
+        return (4 * h / d) * (d - x) * (x / d)
+    endfunction
+
+    private function PointZ takes real pointX, real pointY returns real
+        call MoveLocation( PointLoc, pointX, pointY )
+        return GetLocationZ( PointLoc )
+    endfunction
+
+    private function SeekWounded takes real x, real y returns unit
+        local integer   size            = BlzGroupGetSize( HEWoundeds )
+        local integer   index           = 0x0
+        local real      lowHP           = 10000000.0
+        local real      shortDistance   = 99999.0
+        
+        local real      seekingHP       = 0.0
+        local real      seekingDist     = 0.0
+        local unit      seeking         = null
+
+        set             HEUnit          = null 
+
+        loop
+            set seeking     = BlzGroupUnitAt( HEWoundeds, index )
+            set seekingHP   = GetWidgetLife( seeking )
+            set seekingDist = SquareRoot( (GetWidgetX(seeking) - x)*(GetWidgetX(seeking) - x) + (GetWidgetY(seeking) - y) * (GetWidgetY(seeking) - y)  )
+            
+            if seekingHP != GetUnitState( seeking, UNIT_STATE_MAX_LIFE) then
+                if seekingDist >= (shortDistance - 50.0) and seekingDist <=  (shortDistance + 50.0) then
+                    if lowHP > seekingHP then 
+                        set lowHP = seekingHP
+                        set HEUnit = seeking
+                    endif
+                else
+                    if lowHP > seekingHP then 
+                        set lowHP = seekingHP
+                    endif
+
+                    if shortDistance > seekingDist then 
+                        set shortDistance = seekingDist
+                        set HEUnit = seeking
+                    endif
+
+                endif
+            endif
+                set index = index + 0x1 
+            exitwhen index == size
+        endloop
+
+        call GroupClear( HEWoundeds )
+
+        return HEUnit
+    endfunction
+
+    private function HealTag takes unit u, real amount, player p returns nothing
+        local texttag   tag         = CreateTextTag()
+        local real      tagX        = GetWidgetX(u) - 32.0
+        local real      tagY        = GetWidgetY(u)
+        local real      tagVelocity = GetRandomReal( 50.0, 100.0) * 0.071 / 128
+        local real      tagAngle    = GetRandomReal( 45.0, 35.0 )
+
+        call SetTextTagPos  ( tag,  tagX,   tagY,   GetRandomReal( -32.0, 10.0 )   )
+        call SetTextTagColor( tag,  13,     255,    25,     255     )
+        call SetTextTagVelocity( tag, tagVelocity * Cos( tagAngle * 0.01745327 ),   tagVelocity * Sin( tagAngle * 0.01745327 ) )
+        call SetTextTagText ( tag,  "+" + I2S(R2I( amount )) + " Healed",     GetRandomReal( 5.5, 8.0 ) * 0.0023 )
+        call SetTextTagPermanent( tag, false )
+        call SetTextTagLifespan( tag, 2.70 )
+        call SetTextTagFadepoint( tag, 1.10 )
+
+        call SetTextTagVisibility( tag, GetLocalPlayer() == GetOwningPlayer(u) or  GetLocalPlayer() == p )
+        set tag = null
+    endfunction
+
+    public function HealUnitEx takes unit trg, real amount, boolean isPercentage returns real
+        local real    heal      = 0.0
+        local real    maxlife   = GetUnitState( trg, UNIT_STATE_MAX_LIFE ) 
+        local real    life      = GetWidgetLife(trg)
+
+        if UnitAlive( trg ) then
+            if isPercentage then 
+                set heal = maxlife * amount
+                if heal > ( maxlife - life ) then
+                    set heal = maxlife - life
+                endif
+            else
+                if amount >  ( maxlife - life ) then
+                    set heal = maxlife - life
+                else
+                    set heal = amount
+                endif
+            endif
+
+            call SetWidgetLife( trg, life + heal )
+
+            return heal
+        endif
+
+        return 0.0
+    endfunction
+
+    public function PostEffect_Z takes nothing returns nothing
+        local timer     t   = GetExpiredTimer()
+        local integer   id  = GetHandleId(t)
+        local effect    eff = LoadEffectHandle( HEHash, id, 0 )
+
+        call PauseTimer     ( t )
+        call DestroyTimer   ( t )
+
+        call FlushChildHashtable( HEHash, id )
+
+        call BlzSetSpecialEffectScale( eff, 0.005 )
+        call DestroyEffect( eff )
+
+         
+        set eff = null
+        set t = null
+    endfunction
+
+    public function PostEffect takes effect eff, real time_z returns nothing
+        local timer     t   = CreateTimer()
+        local integer   id  = GetHandleId(t)
+        call SaveEffectHandle( HEHash, id, 0, eff )
+        call TimerStart( t, time_z, false, function PostEffect_Z )
+        set t = null
+    endfunction
+
+    public function HealUnit takes unit src, unit trg, real amount, boolean isPercentage returns nothing
+        local integer srcId     = GetPlayerId( GetOwningPlayer(src) ) + 1
+        local real    heal      = 0.0
+        local real    maxlife   = GetUnitState( trg, UNIT_STATE_MAX_LIFE ) 
+        local real    life      = GetWidgetLife(trg)
+        if UnitAlive( trg ) then
+            if isPercentage then 
+                set heal = maxlife * amount
+                if heal > ( maxlife - life ) then
+                    set heal = maxlife - life
+                endif
+            else
+                if amount >  ( maxlife - life ) then
+                    set heal = maxlife - life
+                else
+                    set heal = amount
+                endif
+            endif
+            call SetWidgetLife( trg, life + heal )
+
+            set udg_CR_Game_Healed[srcId] = udg_CR_Game_Healed[srcId] + R2I( heal )
+            //set udg_CR_Game_Heals[srcId] = udg_CR_Game_Heals[srcId] + 1
+            
+            // Automatical change score board
+            ///call SetNV2PlayerColumnInt( srcId, "LICHeals",  udg_CR_Game_Heals   [srcId] )
+            call SetNV2PlayerColumnInt( srcId, "LICHealed", udg_CR_Game_Healed  [srcId] )
+
+            if HETextTagsOn then 
+                call HealTag( trg, heal, GetOwningPlayer(src) )
+            endif
+        endif
+    endfunction
+
+    private function WardCap takes integer hwtId, unit hwu, player hwo, real zheal returns nothing
+        local integer hwuHDL    = GetHandleId( hwu )
+        local integer hwoID     = GetPlayerId( hwo ) + 1
+        local boolean isCap     = zheal > 0.0
+        local boolean isFirst   = zheal < 0.0
+        local boolean onCap     = LoadBoolean( HEHash, hwtId, hwuHDL )
+        local integer Cap       = 0
+
+        if isFirst then
+            call SaveReal( HEHash, hwtId, hwuHDL, 0.0 )
+            return
+        endif
+
+        if isCap then
+            call SaveReal( HEHash, hwtId, hwuHDL, LoadReal( HEHash, hwtId, hwuHDL ) + zheal )
+            call SaveBoolean( HEHash, hwtId, hwuHDL, true ) 
+        else
+            if onCap then 
+                call SaveBoolean( HEHash, hwtId, hwuHDL, false )
+                set Cap = R2I( LoadReal( HEHash, hwtId, hwuHDL ) )
+                if Cap > 0.0 then 
+                    call SaveReal( HEHash, hwtId, hwuHDL,  0.0 )
+                    set udg_CR_Game_Healed[hwoID] = udg_CR_Game_Healed[hwoID] + Cap
+                    //set udg_CR_Game_Heals [hwoID] = udg_CR_Game_Heals [hwoID] + 1
+
+                    // Automatical change score board
+                    //call SetNV2PlayerColumnInt( hwoID, "LICHeals",  udg_CR_Game_Heals   [hwoID] )
+                    call SetNV2PlayerColumnInt( hwoID, "LICHealed", udg_CR_Game_Healed  [hwoID] )
+                    
+                    if HETextTagsOn then 
+                       call HealTag( hwu, Cap, hwo )
+                    endif
+
+                endif
+            endif
+        endif
+    endfunction
+
+    private function Ward takes nothing returns nothing
+        local timer     wardTimer       = GetExpiredTimer   ()
+        local integer   wardTimerId     = GetHandleId       ( wardTimer )
+        local unit      ward            = LoadUnitHandle    ( HEHash, wardTimerId, HE_WARD_UNIT             )
+        local player    wardOwner       = LoadPlayerHandle  ( HEHash, wardTimerId, HE_WARD_OWNER            )
+        local integer   wardTick        = LoadInteger       ( HEHash, wardTimerId, HE_WARD_TICK             )
+        local real      wardHealPercent = ( LoadReal        ( HEHash, wardTimerId, HE_WARD_HEAL_PERENTAGE   ) + LoadReal( HEHash, wardTimerId, HE_WARD_EXTRA_HPERCENT ) ) / 20.0
+        local string    wardEffectHeal  
+        local real      wardLocationX   = LoadReal          ( HEHash, wardTimerId, HE_WARD_LOCATION_X       )  
+        local real      wardLocationY   = LoadReal          ( HEHash, wardTimerId, HE_WARD_LOCATION_Y       )
+        local real      wardRadius      = LoadReal          ( HEHash, wardTimerId, HE_WARD_RADIUS           )
+        local group     wardCapGroup    = LoadGroupHandle   ( HEHash, wardTimerId, HE_WARD_HEAL_CAP         )
+        local boolean   wardBuff        = false
+
+    if UnitAlive( ward ) then 
+
+        if wardTick > 0 then 
+            call SaveInteger    ( HEHash, wardTimerId, HE_WARD_TICK, wardTick - 1  )
+        else
+            call SaveInteger ( HEHash, wardTimerId, HE_WARD_TICK, 20 )
+            set wardEffectHeal = LoadStr( HEHash, wardTimerId, HE_WARD_EFFECT )
+            set wardBuff = true
+        endif  
+
+        call GroupEnumUnitsInRange   ( HEGroup,  wardLocationX,  wardLocationY,  wardRadius, null ) 
+
+        loop
+            set HEUnit = FirstOfGroup( HEGroup )
+        exitwhen HEUnit == null
+            call GroupRemoveUnit( HEGroup, HEUnit )
+            if IsUnitAlly( HEUnit, wardOwner ) and UnitAlive( HEUnit ) and not IsUnitType( HEUnit, UNIT_TYPE_STRUCTURE ) and not IsUnitType( HEUnit, UNIT_TYPE_ANCIENT ) and not IsUnitType( HEUnit, UNIT_TYPE_MECHANICAL ) and GetUnitAbilityLevel( HEUnit, 1097625443 ) == 0 then
+
+                if IsUnitInGroup( HEUnit, wardCapGroup ) then
+                    call WardCap( wardTimerId, HEUnit, wardOwner,  HealUnitEx( HEUnit, wardHealPercent, true ) )
+                else
+                    call GroupAddUnit( wardCapGroup, HEUnit )
+                    call WardCap( wardTimerId, HEUnit, wardOwner, -1.00 )
+                    call WardCap( wardTimerId, HEUnit, wardOwner,  HealUnitEx( HEUnit, wardHealPercent, true ) )
+                endif
+
+                if wardBuff then 
+                    call PostEffect  ( AddSpecialEffectTarget( wardEffectHeal, HEUnit, "origin" ), 1.0 )
+                    set HEGroupSize = BlzGroupGetSize( wardCapGroup ) 
+                    set HEGroupIndex = 0
+                    loop
+                        set HEUnit = BlzGroupUnitAt( wardCapGroup, HEGroupIndex )
+                        
+                        call WardCap( wardTimerId, HEUnit, wardOwner, 0 )
+
+                        set HEGroupIndex = HEGroupIndex + 1
+                    exitwhen HEGroupIndex == HEGroupSize
+                    endloop
+                endif
+            endif
+        endloop
+    else
+        call PauseTimer         ( wardTimer             )
+        call DestroyTimer       ( wardTimer             )
+
+        set HEGroupSize = BlzGroupGetSize( wardCapGroup ) 
+        set HEGroupIndex = 0
+        loop
+            set HEUnit = BlzGroupUnitAt( wardCapGroup, HEGroupIndex )
+            
+            call WardCap( wardTimerId, HEUnit, wardOwner, 0 )
+
+            set HEGroupIndex = HEGroupIndex + 1
+        exitwhen HEGroupIndex == HEGroupSize
+        endloop
+        call GroupClear         ( wardCapGroup )
+        call DestroyGroup       ( wardCapGroup )
+        call FlushChildHashtable( HEHash, wardTimerId   )
+    endif
+        set wardOwner       = null
+        set ward            = null
+        set wardCapGroup    = null
+        set wardTimer       = null
+    endfunction
+
+    private function Rejuvenation takes nothing returns nothing
+        local timer     RejuvenationTimer       = GetExpiredTimer()
+        local integer   RejuvenationTimerId     = GetHandleId( RejuvenationTimer )
+        local integer   RejuvenationBuff        = LoadInteger( HEHash, RejuvenationTimerId, HE_REJUVENATION_BUFF )
+
+        local unit      RejuvenationHealed      = LoadUnitHandle( HEHash, RejuvenationTimerId, HE_REJUVENATION_HEALED   )
+        local integer   Tick                    = LoadInteger   ( HEHash, RejuvenationTimerId, HE_REJUVENATION_TICK     )
+//        local integer   RejuvenationPlayeId     = 0
+//        local real      RejuvenationTime        = 0.0
+//        local real      RejuvenationExtraHeal   = 0.0
+
+        if UnitAlive( RejuvenationHealed ) and GetUnitAbilityLevel( RejuvenationHealed, RejuvenationBuff ) > 0 then 
+
+            if Tick > 0 then
+                call SaveInteger( HEHash, RejuvenationTimerId, HE_REJUVENATION_TICK, Tick -1 )
+            else
+                call SaveInteger( HEHash, RejuvenationTimerId, HE_REJUVENATION_TICK, 19 )
+
+//                set RejuvenationPlayeId     = GetPlayerId( GetOwningPlayer( LoadUnitHandle( HEHash, RejuvenationTimerId, HE_REJUVENATION_HEALER ) ) ) + 1
+//                set RejuvenationTime        = LoadReal( HEHash, RejuvenationTimerId, HE_REJUVENATION_TIME )
+//                set RejuvenationExtraHeal   = udg_ExtraHeal [ RejuvenationPlayeId ] / RejuvenationTime
+                if GetWidgetLife(RejuvenationHealed) != GetUnitState( RejuvenationHealed, UNIT_STATE_MAX_LIFE ) then
+                    call HealUnit( LoadUnitHandle( HEHash, RejuvenationTimerId, HE_REJUVENATION_HEALER ), RejuvenationHealed, LoadReal( HEHash, RejuvenationTimerId, HE_REJUVENATION_RATE ) , false )
+                endif
+            endif
+        else
+            call PauseTimer( RejuvenationTimer )
+            call DestroyTimer( RejuvenationTimer )
+            call FlushChildHashtable( HEHash, RejuvenationTimerId )
+        endif
+
+        set RejuvenationTimer   = null
+        set RejuvenationHealed  = null
+    endfunction
+
+    private function HealTarget takes unit src, unit trg, integer healkey, integer LEVEL returns nothing
+        local integer   HealPID     = GetPlayerId( GetOwningPlayer( src ) ) + 1
+        local real      HealHP      = LoadReal( HEHash, healkey, HE_HEAL_VALUE + LEVEL ) + udg_ExtraHeal[ HealPID ]
+        local real      HealBoost   = LoadReal( HEHash, healkey, HE_HEAL_BOOST + LEVEL ) // + udg_ExtraHealPercent[ HealPID ] //<- Uncomment when need...
+        local string    HealEffect  = LoadStr( HEHash, healkey, HE_HEAL_EFFECT + LEVEL )
+
+        if HealBoost > 0.0 then 
+            if HealHP > 0.0 then
+                set HealHP = HealHP + GetUnitState( trg, UNIT_STATE_MAX_LIFE ) * HealBoost
+            else
+                set HealHP = GetUnitState( trg, UNIT_STATE_MAX_LIFE ) * HealBoost
+            endif
+        endif 
+
+        call HealUnit( src, trg, HealHP, false )
+
+        if HealEffect != null then
+            call DestroyEffect( AddSpecialEffectTarget( HealEffect, trg, "orgin" ) )
+        endif
+
+        set HealEffect = null
+    endfunction
+
+    private function BeamLife takes nothing returns nothing
+        local timer     BeamTimer       = GetExpiredTimer()
+        local integer   BeamTimerId     = GetHandleId( BeamTimer )
+        local integer   BeamTick        = LoadInteger( HEHash, BeamTimerId, 0 )
+        local unit      BeamAlpha       = LoadUnitHandle( HEHash, BeamTimerId, 0 )
+        local unit      BeamBeta        = LoadUnitHandle( HEHash, BeamTimerId, 1 )
+
+        if BeamTick > 0 and UnitAlive( BeamAlpha ) and UnitAlive( BeamBeta ) then
+            call SaveInteger( HEHash, BeamTimerId, 0,  BeamTick - 1)
+            call MoveLightning( LoadLightningHandle( HEHash, BeamTimerId, 2 ), true, GetWidgetX(BeamAlpha), GetWidgetY(BeamAlpha), GetWidgetX(BeamBeta), GetWidgetY(BeamBeta)  )
+        else
+            call DestroyTimer( BeamTimer )
+            call DestroyLightning( LoadLightningHandle( HEHash, BeamTimerId, 2 ) )
+
+            call FlushChildHashtable( HEHash, BeamTimerId)
+        endif
+
+        set BeamTimer = null
+        set BeamAlpha = null
+        set BeamBeta  = null
+
+    endfunction
+
+    private function BeamStike takes unit alpha, unit beta, integer HWkey, boolean firstOrSecond returns nothing
+        local timer     BeamTimer       = CreateTimer()
+        local integer   BeamTimerId     = GetHandleId( BeamTimer )
+        
+        call SaveInteger( HEHash, BeamTimerId, 0, 30 ) // 30 is 1.5 wave life
+        call SaveUnitHandle( HEHash, BeamTimerId, 0, alpha  )
+        call SaveUnitHandle( HEHash, BeamTimerId, 1, beta   )
+
+        call PostEffect( AddSpecialEffectTarget( LoadStr( HEHash, HWkey, HE_HEALING_WAVE_EFFECT ), beta, "origin" ), 1.15 )
+
+        if firstOrSecond then
+            call SaveLightningHandle( HEHash, BeamTimerId, 2, AddLightning( LoadStr( HEHash, HWkey, HE_HEALING_WAVE_BEAM ), true,  GetWidgetX(alpha), GetWidgetY(alpha), GetWidgetX(beta), GetWidgetY(beta) ) )
+        else
+            call SaveLightningHandle( HEHash, BeamTimerId, 2, AddLightning( LoadStr( HEHash, HWkey, HE_HEALING_WAVE_BEAM_Z ), true, GetWidgetX(alpha), GetWidgetY(alpha), GetWidgetX(beta), GetWidgetY(beta) ) )
+        endif
+
+        call TimerStart( BeamTimer, 0.05, true, function BeamLife )
+        
+        set BeamTimer = null 
+    endfunction
+
+    private function HealingWaveOfk takes nothing returns nothing
+        local timer     HWTimer         = GetExpiredTimer   ( )
+        local integer   HWTimerId       = GetHandleId       ( HWTimer )
+        local integer   HWKey           = LoadInteger       ( HEHash, HWTimerId, HE_HEALING_WAVE_KEY            )
+        local integer   LEVEL           = LoadInteger       ( HEHash, HWTimerId, 10                             )
+        local real      HWHeal          = LoadReal          ( HEHash, HWTimerId, HE_HEALING_WAVE_HEAL           ) 
+        local unit      HWSource        = LoadUnitHandle    ( HEHash, HWTimerId, HE_HEALING_WAVE_HEAL           )
+        local real      HWRadius        = LoadReal          ( HEHash, HWKey,     HE_HEALING_WAVE_RADIUS + LEVEL )
+        local group     HWGroup         = LoadGroupHandle   ( HEHash, HWTimerId, HE_HEALING_WAVE_GROUP          )
+        local player    HWSourcePlayer  = GetOwningPlayer   ( HWSource )
+        local integer   HWJumps         = LoadInteger       ( HEHash, HWTimerId, HE_HEALING_WAVE_TOOKS          )
+        local unit      HWTarget
+        local boolean   Ofk             = false
+    if  HWJumps > 0 then 
+
+        call GroupEnumUnitsInRange( HEGroup, LoadReal( HEHash, HWTimerId, HE_HEALING_WAVE_LOC_X ), LoadReal( HEHash, HWTimerId, HE_HEALING_WAVE_LOC_Y ), HWRadius, null )
+        loop
+            set HWTarget = FirstOfGroup( HEGroup )
+        exitwhen HWTarget == null
+            call GroupRemoveUnit( HEGroup, HWTarget )
+            set Ofk = not IsUnitInGroup( HWTarget, HWGroup  ) and IsUnitAlly( HWTarget, HWSourcePlayer )
+            set Ofk = Ofk and not IsUnitType( HWTarget, UNIT_TYPE_MECHANICAL ) and not IsUnitType( HWTarget, UNIT_TYPE_ANCIENT ) and not IsUnitType( HWTarget, UNIT_TYPE_STRUCTURE )
+            set Ofk = Ofk and GetUnitAbilityLevel( HWTarget, 1097625443 ) == 0 and GetWidgetLife( HWTarget ) != GetUnitState( HWTarget, UNIT_STATE_MAX_LIFE ) and UnitAlive(HWTarget)
+            if Ofk then
+                call GroupAddUnit( HEWoundeds, HWTarget )
+            endif
+        endloop
+
+        if BlzGroupGetSize( HEWoundeds ) > 0 then
+            set HWTarget = SeekWounded(LoadReal( HEHash, HWTimerId, HE_HEALING_WAVE_LOC_X ), LoadReal( HEHash, HWTimerId, HE_HEALING_WAVE_LOC_Y ))
+            set Ofk = HWTarget != null
+        endif
+
+        if Ofk then 
+            call SaveInteger    ( HEHash, HWTimerId, HE_HEALING_WAVE_TOOKS, HWJumps - 1 )
+            call GroupAddUnit   ( HWGroup, HWTarget )
+            call GroupClear     ( HEGroup )
+            set HWHeal          = HWHeal - ( HWHeal * LoadReal( HEHash, HWKey, HE_HEALING_WAVE_RATE + LEVEL) )
+            call SaveReal       ( HEHash,   HWTimerId,   HE_HEALING_WAVE_HEAL,   HWHeal  ) 
+            call BeamStike      ( LoadUnitHandle( HEHash, HWTimerId, HE_HEALING_WAVE_LAST ), HWTarget, HWKey,  true  )
+            call HealUnit       ( HWSource, HWTarget, HWHeal, false )
+            call SaveUnitHandle ( HEHash, HWTimerId, HE_HEALING_WAVE_LAST, HWTarget )
+            call SaveReal       ( HEHash, HWTimerId, HE_HEALING_WAVE_LOC_X, GetWidgetX( HWTarget ) )
+            call SaveReal       ( HEHash, HWTimerId, HE_HEALING_WAVE_LOC_Y, GetWidgetY( HWTarget ) )
+        else
+            call PauseTimer         ( HWTimer )
+            call DestroyTimer       ( HWTimer )
+            call GroupClear         ( HWGroup )
+            call DestroyGroup       ( HWGroup )
+            call FlushChildHashtable( HEHash, HWTimerId )
+        endif
+    else
+        call PauseTimer         ( HWTimer )
+        call DestroyTimer       ( HWTimer )
+        call GroupClear         ( HWGroup )
+        call DestroyGroup       ( HWGroup )
+        call FlushChildHashtable( HEHash, HWTimerId )
+    endif
+        set HWTarget        = null
+        set HWTimer         = null
+        set HWSource        = null
+        set HWGroup         = null
+        set HWSourcePlayer  = null
+
+    endfunction
+
+    private function HealingWave takes unit HWSource, unit HWTarget, integer HWKey, integer LEVEL returns nothing
+        local timer     HWTimer     = CreateTimer( )
+        local integer   HWTimerId   = GetHandleId( HWTimer )
+        local integer   HWPlayerId  = GetPlayerId( GetOwningPlayer( HWSource ) ) + 1
+        local real      HWHeal      = LoadReal( HEHash, HWKey, HE_HEALING_WAVE_HEAL + LEVEL ) + udg_ExtraHeal[ HWPlayerId ]
+        local group     HWGroup     = CreateGroup()
+
+        call BeamStike      ( HWSource, HWTarget, HWKey,  true  )
+        call HealUnit       ( HWSource, HWTarget, HWHeal, false )
+
+        call GroupAddUnit   ( HWGroup,  HWTarget    )
+
+        call SaveInteger    ( HEHash,   HWTimerId, HE_HEALING_WAVE_KEY,     HWKey   )
+        call SaveUnitHandle ( HEHash,   HWTimerId, HE_HEALING_WAVE_HEAL,    HWSource)
+        call SaveGroupHandle( HEHash,   HWTimerId, HE_HEALING_WAVE_GROUP,   HWGroup )
+
+        call SaveUnitHandle ( HEHash,   HWTimerId, HE_HEALING_WAVE_LAST,    HWTarget)
+
+        call SaveInteger    ( HEHash,   HWTimerId, HE_HEALING_WAVE_TOOKS,   LoadInteger( HEHash, HWKey, HE_HEALING_WAVE_TOOKS + LEVEL ) - 1 )
+        call SaveInteger    ( HEHash,   HWTimerId, 10,                      LEVEL                )
+        call SaveReal       ( HEHash,   HWTimerId, HE_HEALING_WAVE_LOC_X,   GetWidgetX(HWTarget) )
+        call SaveReal       ( HEHash,   HWTimerId, HE_HEALING_WAVE_LOC_Y,   GetWidgetY(HWTarget) )
+        call SaveReal       ( HEHash,   HWTimerId, HE_HEALING_WAVE_HEAL,    HWHeal               )
+
+
+        call TimerStart( HWTimer, HEALING_WAVE_INV, true, function HealingWaveOfk )
+
+        set HWTimer     = null
+    endfunction
+
+    private function Roar takes nothing returns nothing
+        local timer   herTimer       = GetExpiredTimer  (   ) 
+        local integer herTimerId     = GetHandleId      ( herTimer  )
+        local group   herGroup       = LoadGroupHandle  ( HEHash, herTimerId, HE_ROAR_GROUP     )
+        local group   herMajor       = null
+        local integer herPID         = LoadInteger      ( HEHash, herTimerId, HE_ROAR_OWNER     )
+        local real    herHPS         = LoadReal         ( HEHash, herTimerId, HE_ROAR_HPS       )
+        local integer herBuff        = LoadInteger      ( HEHash, herTimerId, HE_ROAR_SEXY_BUFF )
+
+        set HEGroupSize     = BlzGroupGetSize( herGroup ) 
+        
+        if HEGroupSize > 0 then
+            set HEGroupIndex    = 0
+            loop
+                set HEUnit = BlzGroupUnitAt( herGroup,  HEGroupIndex )
+                if GetUnitAbilityLevel( HEUnit, herBuff ) > 0  then
+                    if GetWidgetLife(HEUnit) != GetUnitState( HEUnit, UNIT_STATE_MAX_LIFE ) then 
+                        call HealUnitEx( HEUnit, herHPS, false )
+                        
+                        if HETextTagsOn then 
+                            call HealTag( HEUnit, herHPS, Player(herPID-1) )
+                        endif
+
+                        set udg_CR_Game_Healed[herPID] =  udg_CR_Game_Healed[herPID] + R2I(herHPS)
+                        //set udg_CR_Game_Heals[herPID] = udg_CR_Game_Heals[herPID] + 1
+
+                        //call SetNV2PlayerColumnInt( herPID, "LICHeals",  udg_CR_Game_Heals   [herPID] )
+                        call SetNV2PlayerColumnInt( herPID, "LICHealed", udg_CR_Game_Healed  [herPID] )
+                    endif
+                else
+                    if herMajor == null then
+                        set herMajor = CreateGroup()
+                    endif 
+                    call GroupAddUnit( herMajor, HEUnit )
+                endif
+                set HEGroupIndex = HEGroupIndex  + 1
+            exitwhen HEGroupIndex == HEGroupSize
+            endloop
+
+            if herMajor != null then
+                loop
+                    set HEUnit = FirstOfGroup( herMajor )    
+                exitwhen HEUnit == null 
+                    call GroupRemoveUnit( herMajor, HEUnit )
+                    call GroupRemoveUnit( herGroup, HEUnit )
+                endloop
+                call DestroyGroup( herMajor ) 
+                set herMajor = null
+            endif
+        else
+            call PauseTimer     ( herTimer )
+            call DestroyTimer   ( herTimer )
+            call DestroyGroup   ( herGroup )
+
+            call FlushChildHashtable( HEHash, herTimerId )
+        endif 
+
+        set herGroup = null 
+        set herMajor = null
+        set herTimer = null 
+    endfunction
+
+    private function RoarInfinity takes unit srcHeal, integer healkey, integer LEVEL returns nothing
+        local timer   herTimer       = CreateTimer      (   ) 
+        local integer herTimerId     = GetHandleId      ( herTimer  )
+        local player  herPlayer      = GetOwningPlayer  ( srcHeal )
+        local group   herGroup       = CreateGroup      (   )
+        local integer herPID         = GetPlayerId      ( herPlayer ) + 1
+
+        call GroupEnumUnitsInRange( HEGroup, GetWidgetX(srcHeal), GetWidgetY(srcHeal),  LoadReal( HEHash, healkey, HE_ROAR_RADIUS + LEVEL ), null )
+        loop
+            set HEUnit = FirstOfGroup( HEGroup )
+        exitwhen HEUnit == null
+            call GroupRemoveUnit( HEGroup , HEUnit)
+            if IsUnitAlly( HEUnit, herPlayer ) and UnitAlive( HEUnit ) and not IsUnitType( HEUnit, UNIT_TYPE_STRUCTURE ) and not IsUnitType( HEUnit, UNIT_TYPE_ANCIENT ) and not IsUnitType( HEUnit, UNIT_TYPE_MECHANICAL ) and GetUnitAbilityLevel( HEUnit, 1097625443 ) == 0 then
+                call GroupAddUnit( herGroup, HEUnit )
+            endif
+        endloop
+
+        call SaveInteger        ( HEHash, herTimerId, HE_ROAR_OWNER, herPID  )
+        call SaveGroupHandle    ( HEHash, herTimerId, HE_ROAR_GROUP, herGroup )
+        call SaveInteger        ( HEHash, herTimerId, HE_ROAR_SEXY_BUFF, LoadInteger( HEHash, healkey, HE_ROAR_SEXY_BUFF ) )
+        call SaveReal           ( HEHash, herTimerId, HE_ROAR_HPS, LoadReal( HEHash, healkey, HE_ROAR_HPS + LEVEL ) + udg_ExtraHealOvertime[ herPID ] )
+        
+        call TimerStart( herTimer, 1.00, true, function Roar )
+
+        set herTimer    = null
+        set herPlayer   = null
+    endfunction
+
+    private function GazzMissileEnd takes nothing returns nothing
+        local timer     GazMissileTimer     = GetExpiredTimer( )
+        local integer   GazMissileTimerId   = GetHandleId( GazMissileTimer )
+        
+        local unit      GazHealer      
+        local effect    GazMissile          = LoadEffectHandle  ( HEHash,   GazMissileTimerId,  HE_HEALING_GAS_MISSILE  )
+        local real      GazMissileEndX      = LoadReal          ( HEHash,   GazMissileTimerId,  HE_HEALING_GAS_X        )
+        local real      GazMissileEndY      = LoadReal          ( HEHash,   GazMissileTimerId,  HE_HEALING_GAS_Y        )
+
+        local real      GazMissileX         = BlzGetLocalSpecialEffectX ( GazMissile )
+        local real      GazMissileY         = BlzGetLocalSpecialEffectY ( GazMissile )
+        local real      GazMissileZ         = PointZ                    ( GazMissileX,  GazMissileY )
+        local real      GazMissileDistance  = SquareRoot                ( ( GazMissileEndX - GazMissileX ) * ( GazMissileEndX - GazMissileX ) + ( GazMissileEndY - GazMissileY ) * ( GazMissileEndY - GazMissileY ) )
+        local real      GazMissileDirection = Atan2                     ( GazMissileEndY - GazMissileY, GazMissileEndX - GazMissileX )
+        local real      GazMissileDistSafe  = LoadReal          ( HEHash,   GazMissileTimerId,  HE_HEALING_GAS_SAFE_DIST    )
+        local real      GazMissileRadius
+        local real      GazMissileHealAmount
+        local player    GazPlayer
+
+        if not ( GazMissileDistance <= 25.135 ) then
+            set     GazMissileX = GazMissileX + 25 * Cos( GazMissileDirection )
+            set     GazMissileY = GazMissileY + 25 * Sin( GazMissileDirection )
+            set     GazMissileZ = GazMissileZ + ParabolaZ( 145, GazMissileDistSafe, GazMissileDistance )
+
+            call    BlzSetSpecialEffectX( GazMissile, GazMissileX )
+            call    BlzSetSpecialEffectY( GazMissile, GazMissileY )
+            call    BlzSetSpecialEffectZ( GazMissile, GazMissileZ )
+
+            call    BlzSetSpecialEffectRoll( GazMissile, GazMissileDirection )
+        else
+            call    PauseTimer          ( GazMissileTimer )
+
+            call    DestroyEffect       ( GazMissile      )
+            set     GazMissileRadius        = LoadReal ( HEHash,   GazMissileTimerId,  HE_HEALING_GAS_RADIUS )
+            
+            set     GazMissileHealAmount    = LoadReal      ( HEHash,   GazMissileTimerId,  HE_HEALING_GAS_HEAL     )
+            set     GazHealer               = LoadUnitHandle( HEHash,   GazMissileTimerId,  HE_HEALING_GAS_HEALER   )
+            set     GazPlayer               = GetOwningPlayer( GazHealer )
+
+            call    GroupEnumUnitsInRange  ( HEGroup, GazMissileEndX, GazMissileEndY, GazMissileRadius, null )
+            loop
+                set HEUnit  = FirstOfGroup( HEGroup )
+            exitwhen HEUnit == null
+                call GroupRemoveUnit( HEGroup, HEUnit )
+                if IsUnitAlly( HEUnit, GazPlayer ) and UnitAlive( HEUnit ) and not IsUnitType( HEUnit, UNIT_TYPE_STRUCTURE ) and not IsUnitType( HEUnit, UNIT_TYPE_ANCIENT ) and not IsUnitType( HEUnit, UNIT_TYPE_MECHANICAL ) and GetUnitAbilityLevel( HEUnit, 1097625443 ) == 0 then
+                    if GetWidgetLife( HEUnit ) != GetUnitState( HEUnit, UNIT_STATE_MAX_LIFE ) then 
+                        call HealUnit( GazHealer, HEUnit, GazMissileHealAmount, false )
+                    endif
+                endif
+            endloop
+            call    FlushChildHashtable ( HEHash,           GazMissileTimerId   )
+            call    DestroyTimer        ( GazMissileTimer   )
+
+            set             GazHealer           = null
+            set             GazPlayer           = null
+        endif
+        
+        set             GazMissileTimer     = null
+        set             GazMissile          = null
+        
+    endfunction
+
+    private function GazzMissile takes unit GazHealer, string GazEffectFile, real GazHealAmount, real GazLocationX, real GazLocationY, real GazRadius returns nothing
+        local real      GazMissileDistRate  = GazRadius * 0.5
+        local real      GazMissileDist      = GetRandomReal( -GazMissileDistRate, GazMissileDistRate )
+        local real      GazDirection        = GetRandomReal( 0.0, 359.99 ) * .01745327
+        local real      GazHealerX          = GetWidgetX( GazHealer )
+        local real      GazHealerY          = GetWidgetY( GazHealer )
+
+        local real      GazMissileX         = GazLocationX + GazMissileDist * Cos( GazDirection )
+        local real      GazMissileY         = GazLocationY + GazMissileDist * Sin( GazDirection )
+        local real      GazMissileDirection = Atan2             ( GazMissileY - GazLocationY,   GazMissileX - GazLocationX              )
+        local real      GazMissileDistSafe  = SquareRoot        ( ( GazMissileX - GazHealerX ) * ( GazMissileX - GazHealerX ) + ( GazMissileY - GazHealerY ) * ( GazMissileY - GazHealerY ) )
+        local effect    GazMissileEffect    = AddSpecialEffect  ( GazEffectFile,                GazHealerX,                 GazHealerY  )
+        
+        local timer     GazMissileTimer     = CreateTimer( )
+        local integer   GazMissileTimerId   = GetHandleId( GazMissileTimer )
+        
+        call            SaveUnitHandle      ( HEHash,           GazMissileTimerId,  HE_HEALING_GAS_HEALER,      GazHealer           )
+        call            SaveEffectHandle    ( HEHash,           GazMissileTimerId,  HE_HEALING_GAS_MISSILE,     GazMissileEffect    )
+        call            SaveReal            ( HEHash,           GazMissileTimerId,  HE_HEALING_GAS_HEAL,        GazHealAmount       )
+        call            SaveReal            ( HEHash,           GazMissileTimerId,  HE_HEALING_GAS_X,           GazMissileX         )
+        call            SaveReal            ( HEHash,           GazMissileTimerId,  HE_HEALING_GAS_Y,           GazMissileY         )
+        call            SaveReal            ( HEHash,           GazMissileTimerId,  HE_HEALING_GAS_RADIUS,      GazRadius * 0.49813 )
+        call            SaveReal            ( HEHash,           GazMissileTimerId,  HE_HEALING_GAS_SAFE_DIST,   GazMissileDistSafe  )
+
+        call            TimerStart          ( GazMissileTimer, .03,                 true,                   function GazzMissileEnd )
+
+        set             GazMissileTimer     = null
+        set             GazMissileEffect    = null
+    endfunction
+
+    private function HealingGas takes nothing returns nothing
+        local timer     GazTimer        = GetExpiredTimer()
+        local integer   GazTimerId      = GetHandleId( GazTimer )
+        
+        local unit      GazSource       = LoadUnitHandle( HEHash, GazTimerId, HE_HEALING_GAS_HEALER  )
+        local integer   GazOrderId      = GetUnitCurrentOrder( GazSource )
+
+        local integer   GazTick         = LoadInteger( HEHash, GazTimerId, HE_HEALING_GAS_IMPACT )
+        
+        // TICKED
+        local string    GazEffectFile
+        local integer   GazMissileIndex
+        local integer   GazMissiles
+        local real      GazLocationX
+        local real      GazLocationY
+        local real      GazHealAmount
+        local real      GazRadius
+
+        if UnitAlive( GazSource ) and ( GazOrderId == 852664 or ( GazOrderId > 852007 and GazOrderId < 852014 ) )  then
+            if GazTick > 0 then
+                call SaveInteger( HEHash, GazTimerId, HE_HEALING_GAS_IMPACT, GazTick - 1 )
+            else
+                call SaveInteger( HEHash, GazTimerId, HE_HEALING_GAS_IMPACT, 24 )
+
+                set GazMissileIndex = 0
+                set GazMissiles     = LoadInteger   ( HEHash, GazTimerId, HE_HEALING_GAS_MISSILES   )
+                set GazEffectFile   = LoadStr       ( HEHash, GazTimerId, HE_HEALING_GAS_EFFECT     )
+                set GazLocationX    = LoadReal      ( HEHash, GazTimerId, HE_HEALING_GAS_X          )
+                set GazLocationY    = LoadReal      ( HEHash, GazTimerId, HE_HEALING_GAS_Y          )
+                set GazRadius       = LoadReal      ( HEHash, GazTimerId, HE_HEALING_GAS_RADIUS     )
+                set GazHealAmount   = LoadReal      ( HEHash, GazTimerId, HE_HEALING_GAS_HEAL       )
+                loop
+
+                    call    GazzMissile      ( GazSource, GazEffectFile, GazHealAmount, GazLocationX, GazLocationY, GazRadius )
+                    set     GazMissileIndex = GazMissileIndex + 1 
+
+                exitwhen    GazMissileIndex == GazMissiles
+                endloop
+
+                set GazEffectFile   = null
+            endif
+        else
+            call PauseTimer         ( GazTimer )
+            call DestroyTimer       ( GazTimer )
+            call FlushChildHashtable( HEHash,   GazTimerId  )
+        endif
+
+        set             GazTimer        = null
+        set             GazSource       = null 
+    endfunction
+
+    private function Gazz takes unit GazSorce, integer key, integer LEVEL returns nothing
+        local real      GazTargetX      = GetSpellTargetX()
+        local real      GazTargetY      = GetSpellTargetY()
+
+        local timer     GazTimer        = CreateTimer()
+        local integer   GazTimerId      = GetHandleId( GazTimer )
+
+        call SaveReal       (   HEHash, GazTimerId, HE_HEALING_GAS_HEAL,        LoadReal    (   HEHash, key,    HE_HEALING_GAS_HEAL     + LEVEL )   )
+        call SaveUnitHandle (   HEHash, GazTimerId, HE_HEALING_GAS_HEALER,      GazSorce    )
+        call SaveReal       (   HEHash, GazTimerId, HE_HEALING_GAS_X,           GazTargetX  )
+        call SaveReal       (   HEHash, GazTimerId, HE_HEALING_GAS_Y,           GazTargetY  )
+        call SaveInteger    (   HEHash, GazTimerId, HE_HEALING_GAS_IMPACT,      0           )
+        call SaveStr        (   HEHash, GazTimerId, HE_HEALING_GAS_EFFECT,      LoadStr     (   HEHash, key,    HE_HEALING_GAS_EFFECT ) )
+        call SaveInteger    (   HEHash, GazTimerId, HE_HEALING_GAS_MISSILES,    LoadInteger (   HEHash, key,    HE_HEALING_GAS_MISSILES + LEVEL )   )
+        call SaveReal       (   HEHash, GazTimerId, HE_HEALING_GAS_RADIUS,      LoadReal    (   HEHash, key,    HE_HEALING_GAS_RADIUS   + LEVEL )   )
+
+        call TimerStart ( GazTimer, 0.04, true, function HealingGas )
+
+        set             GazTimer        = null
+    endfunction
+
+    private function Actions takes nothing returns nothing
+        local integer abilityID     = GetSpellAbilityId()
+        local unit    sourceHeal    = GetSpellAbilityUnit()
+        local unit    targetHeal    = GetSpellTargetUnit()
+        local integer LEVEL         = ( GetUnitAbilityLevel( sourceHeal, abilityID ) - 1 ) * 20
+        local integer healType      = LoadInteger( HEHash, abilityID, HE_INT_TYPE )
+        local timer   heTimer       
+        local integer heTimerId     = 0
+
+        local boolean isHealedEngine    = LoadBoolean( HEHash, abilityID, 0 )
+        
+        local unit    dummyOwner    = LoadUnitHandle( HEHash, GetHandleId(sourceHeal), 255 ) 
+
+        if dummyOwner != null then
+            set sourceHeal = dummyOwner
+            call FlushChildHashtable( HEHash, GetHandleId(sourceHeal) )
+            set dummyOwner = null
+        endif
+
+if isHealedEngine then 
+
+        if healType == HE_TYPE_REJUVENATION then 
+            set heTimer     = CreateTimer()
+            set heTimerId   = GetHandleId(heTimer)
+            
+            // call SaveInteger    (   HEHash, heTimerId, 10,    LEVEL   )
+
+            call SaveUnitHandle (   HEHash, heTimerId, HE_REJUVENATION_HEALED,    targetHeal )
+            call SaveUnitHandle (   HEHash, heTimerId, HE_REJUVENATION_HEALER,    sourceHeal )
+            call SaveReal       (   HEHash, heTimerId, HE_REJUVENATION_RATE,      ( LoadReal(HEHash, abilityID, HE_REJUVENATION_RESTORE  + LEVEL ) + udg_ExtraHeal[ GetPlayerId( GetOwningPlayer( sourceHeal ) ) +1 ] ) / LoadReal(HEHash, abilityID, HE_REJUVENATION_TIME + LEVEL ) )
+            call SaveReal       (   HEHash, heTimerId, HE_REJUVENATION_TIME,      LoadReal(HEHash, abilityID, HE_REJUVENATION_TIME     + LEVEL ))  
+            call SaveInteger    (   HEHash, heTimerId, HE_REJUVENATION_TICK,      0          ) 
+            call SaveInteger    (   HEHash, heTimerId, HE_REJUVENATION_BUFF,      LoadInteger( HEHash, abilityID, HE_REJUVENATION_BUFF + LEVEL )) 
+            call TimerStart     (   heTimer,    0.05,   true,   function Rejuvenation )
+        elseif healType == HE_TYPE_HEAL then
+            call HealTarget( sourceHeal, targetHeal, abilityID, LEVEL   )
+        elseif healType == HE_TYPE_HEALING_WAVE then 
+            call HealingWave( sourceHeal, targetHeal, abilityID, LEVEL  ) 
+        elseif healType == HE_TYPE_ROAR then
+            call RoarInfinity( sourceHeal, abilityID, LEVEL )
+        elseif healType == HE_TYPE_HEALING_GAS then
+            call Gazz( sourceHeal, abilityID, LEVEL )
+        endif
+endif
+        set sourceHeal  = null
+        set targetHeal  = null
+        set heTimer     = null
+    endfunction
+
+    function WardRegister takes unit heWard, player heWardOwner, integer heWardKey returns nothing
+        local timer     wardTimer   = CreateTimer( )
+        local integer   wardTimerId = GetHandleId( wardTimer )
+
+        call SaveInteger( HEHash, wardTimerId, HE_WARD_TICK,    0   )
+        call SaveReal   ( HEHash, wardTimerId, HE_WARD_HEAL_PERENTAGE, LoadReal( HEHash, heWardKey, HE_WARD_HEAL_PERENTAGE ) )
+        call SaveReal   ( HEHash, wardTimerId, HE_WARD_RADIUS,         LoadReal( HEHash, heWardKey, HE_WARD_RADIUS         ) )
+        call SaveReal   ( HEHash, wardTimerId, HE_WARD_EFFECT,         LoadReal( HEHash, heWardKey, HE_WARD_EFFECT         ) )
+        call SaveReal   ( HEHash, wardTimerId, HE_WARD_EXTRA_HPERCENT, udg_ExtraHealPercent[ GetPlayerId( GetOwningPlayer(heWard) ) + 1] )
+        call SaveReal( HEHash, wardTimerId, HE_WARD_LOCATION_X,     GetWidgetX(heWard) )
+        call SaveReal( HEHash, wardTimerId, HE_WARD_LOCATION_Y,     GetWidgetY(heWard) )
+
+        call SaveUnitHandle     ( HEHash, wardTimerId, HE_WARD_UNIT,     heWard     )
+        call SavePlayerHandle   ( HEHash, wardTimerId, HE_WARD_OWNER,  heWardOwner  )
+
+        call SaveGroupHandle    ( HEHash, wardTimerId, HE_WARD_HEAL_CAP, CreateGroup() )
+
+        call TimerStart( wardTimer, 0.05, true, function Ward )
+        
+        set wardTimer = null
+    endfunction
+
+    function Actions_Z takes nothing returns nothing
+        local unit      Summoner        = GetSummoningUnit  (   )
+        local unit      Summoned        = GetSummonedUnit   (   ) // Reserved for Future
+        local player    SummonedOwner   = GetOwningPlayer   ( Summoner )
+        local integer   SummonedId      = GetUnitTypeId     ( Summoned )
+        local boolean   isHealedEngine  = LoadBoolean       ( HEHash,   SummonedId,     0           )
+        local integer   healType        = LoadInteger       ( HEHash,   SummonedId,     HE_INT_TYPE )
+if isHealedEngine then 
+        if healType == HE_TYPE_WARD then
+            call WardRegister( Summoned, SummonedOwner,  SummonedId )
+        endif
+endif
+        set Summoner        = null
+        set Summoned        = null
+        set SummonedOwner   = null
+    endfunction
+
+    public function Add takes nothing returns nothing
+        local integer LEVEL = ( udg_HE_Level - 1 ) * 20
+
+        if udg_HE_Level < 2 then 
+            call SaveBoolean( HEHash, udg_HE_HashKey, 0, true )
+            call SaveInteger( HEHash, udg_HE_HashKey, HE_INT_TYPE, udg_HE_Type )
+        endif
+
+        if udg_HE_Type == HE_TYPE_WARD then
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_WARD_HEAL_PERENTAGE,   udg_HE_Percentage   )
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_WARD_RADIUS,           udg_HE_Radius       )
+            call SaveStr    ( HEHash, udg_HE_HashKey, HE_WARD_EFFECT,           udg_HE_Effect       )
+            // AutoReset
+            set udg_HE_Percentage   = 0.0
+            set udg_HE_Radius       = 0.0
+            set udg_HE_Effect       = null
+            return
+        endif
+        
+        if udg_HE_Type == HE_TYPE_REJUVENATION then
+            call SaveReal       ( HEHash, udg_HE_HashKey, HE_REJUVENATION_RESTORE + LEVEL,  udg_HE_HP           )
+            call SaveReal       ( HEHash, udg_HE_HashKey, HE_REJUVENATION_TIME + LEVEL,     udg_HE_Time         )
+            call SaveInteger    ( HEHash, udg_HE_HashKey, HE_REJUVENATION_BUFF + LEVEL,     udg_HE_Buff         )
+            // AutoReset
+            set udg_HE_HP   = 0.0
+            set udg_HE_Time = 0.0
+            set udg_HE_Buff = 0
+            return
+        endif
+
+        if udg_HE_Type == HE_TYPE_HEAL then
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_HEAL_VALUE + LEVEL,    udg_HE_HP               )
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_HEAL_BOOST + LEVEL,    udg_HE_Percentage       )
+            if udg_HE_Level < 2 then 
+                call SaveStr    ( HEHash, udg_HE_HashKey, HE_HEAL_EFFECT + LEVEL,   udg_HE_Effect           )
+            endif
+             // AutoReset
+            set udg_HE_HP           = 0.0
+            set udg_HE_Percentage   = 0.0
+            set udg_HE_Effect       = null
+
+            set udg_HE_Level = 1
+            return
+        endif
+
+        if udg_HE_Type == HE_TYPE_ROAR then
+            call SaveReal       ( HEHash, udg_HE_HashKey, HE_ROAR_HPS    + LEVEL,   udg_HE_HP       )
+            call SaveReal       ( HEHash, udg_HE_HashKey, HE_ROAR_RADIUS + LEVEL,   udg_HE_Radius   )
+            if udg_HE_Level < 2 then 
+                call SaveInteger( HEHash, udg_HE_HashKey, HE_ROAR_SEXY_BUFF,        udg_HE_Buff     )
+            endif
+            // AutoReset
+            set udg_HE_HP       = 0.0
+            set udg_HE_Radius   = 0.0
+            set udg_HE_Buff     = 0
+            return
+        endif
+
+        if udg_HE_Type == HE_TYPE_HEALING_WAVE then 
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_HEALING_WAVE_HEAL      + LEVEL,    udg_HE_HP           )
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_HEALING_WAVE_RADIUS    + LEVEL,    udg_HE_Radius       )
+            call SaveInteger( HEHash, udg_HE_HashKey, HE_HEALING_WAVE_TOOKS     + LEVEL,    udg_HE_Jumps        )
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_HEALING_WAVE_RATE      + LEVEL,    udg_HE_Percentage   )
+            if udg_HE_Level < 2 then
+                call SaveStr    ( HEHash, udg_HE_HashKey, HE_HEALING_WAVE_EFFECT    + LEVEL,    udg_HE_Effect       )
+                call SaveStr    ( HEHash, udg_HE_HashKey, HE_HEALING_WAVE_BEAM      + LEVEL,    udg_HE_BeamFirst    )
+                call SaveStr    ( HEHash, udg_HE_HashKey, HE_HEALING_WAVE_BEAM_Z    + LEVEL,    udg_HE_BeamSecond   )
+            endif
+             // AutoReset
+            
+            set udg_HE_Jumps        = 0
+            set udg_HE_Radius       = 0.0
+            set udg_HE_HP           = 0.0
+            set udg_HE_Percentage   = 0.0
+            set udg_HE_BeamFirst    = null
+            set udg_HE_BeamSecond   = null
+            set udg_HE_Effect       = null
+
+            set udg_HE_Level = 1
+            return
+        endif
+
+        if udg_HE_Type == HE_TYPE_HEALING_GAS then 
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_HEALING_GAS_HEAL       + LEVEL,    udg_HE_HP           )
+            call SaveReal   ( HEHash, udg_HE_HashKey, HE_HEALING_GAS_RADIUS     + LEVEL,    udg_HE_Radius       )
+            call SaveInteger( HEHash, udg_HE_HashKey, HE_HEALING_GAS_MISSILES   + LEVEL,    udg_HE_Jumps        )
+
+            if udg_HE_Level < 2 then
+                call SaveStr    ( HEHash, udg_HE_HashKey, HE_HEALING_GAS_EFFECT,            udg_HE_Effect       )
+            
+            endif
+             // AutoReset
+            
+            set udg_HE_Jumps        = 0
+            set udg_HE_Radius       = 0.0
+            set udg_HE_HP           = 0.0
+
+            set udg_HE_Effect       = null
+
+            set udg_HE_Level = 1
+        endif
+
+        return
+    endfunction
+
+    public function Init takes nothing returns nothing
+        local integer i = 0
+
+        set Trigger = CreateTrigger()
+        set Trigger_Z = CreateTrigger()
+
+        call TriggerAddAction( Trigger,     function Actions    )
+        call TriggerAddAction( Trigger_Z,   function Actions_Z  )
+        loop
+            call TriggerRegisterPlayerUnitEvent( Trigger,   Player(i), EVENT_PLAYER_UNIT_SPELL_EFFECT, null )
+            call TriggerRegisterPlayerUnitEvent( Trigger_Z, Player(i), EVENT_PLAYER_UNIT_SUMMON,       null )
+            set i = i + 1
+        exitwhen i == 24
+        endloop
+
+        set HEGroup     = CreateGroup()
+        set HEWoundeds  = CreateGroup()
+    endfunction
+endlibrary
+
