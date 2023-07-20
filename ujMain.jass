@@ -1,0 +1,21 @@
+function GameStart takes code gameStartPost returns nothing
+    local integer index = 0x0
+    local game gamestart = game.create()
+    
+    set game.active = true
+    
+    loop
+            set game.gamers[index] = gamer.create(index)
+            
+            if game.gamers[index].flag then
+                
+            endif
+            
+        set index = index + 1
+        exitwhen index == bj_MAX_PLAYERS
+    endloop
+
+    call gamestart.action   ( function gameStartPost )
+    call gamestart.lag      ( 2.5 )
+
+endfunction

@@ -1,0 +1,10 @@
+globals
+    // Hashtables
+    hashtable UjAPI         = InitHashtable() // Wroom Wroom Wrooom
+    hashtable Volchachka    = InitHashtable() // Unryze, it's bug again!!
+    hashtable Unryze        = InitHashtable() // Fuck! Fucking the Semyorka
+endglobals
+
+function Debug takes string message returns nothing
+    call DisplayTimedTextToPlayer( GetLocalPlayer(), 0., 0., 15., message )
+endfunction

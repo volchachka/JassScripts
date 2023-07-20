@@ -1,0 +1,54 @@
+struct gamer
+    integer index   = 0x0
+    player  player  = null
+    boolean flag    = false
+    
+    integer kills   = 0x0
+    integer creeps  = 0x0
+    integer towers  = 0x0
+    integer bases   = 0x0
+    integer support = 0x0
+    
+    integer series      = 0x0
+    integer royaling    = 0x0
+    
+    object  hero    = -1
+    
+    real    profit  = 0.0
+    
+    method colour takes playercolor pcolor returns nothing
+        call SetPlayerColor( this.player, pcolor )
+    endmethod
+    
+    method gold takes integer coins returns nothing
+        call SetPlayerState( this.player, PLAYER_STATE_RESOURCE_GOLD, GetPlayerState( this.player, PLAYER_STATE_RESOURCE_GOLD ) + coins )
+    endmethod
+    
+    method getGold takes nothing returns integer
+        return GetPlayerState( this.player, PLAYER_STATE_RESOURCE_GOLD )
+    endmethod
+    
+    method wood takes integer coins returns nothing
+        call SetPlayerState( this.player, PLAYER_STATE_RESOURCE_LUMBER, GetPlayerState( this.player, PLAYER_STATE_RESOURCE_GOLD ) + coins )
+    endmethod
+    
+    method getWood takes nothing returns integer
+        return GetPlayerState( this.player, PLAYER_STATE_RESOURCE_LUMBER )
+    endmethod
+    
+    static method getreal takes nothing returns thistype
+        return game.gamers[ GetPlayerId( GetTriggerPlayer() ) ]
+    endmethod
+    
+    static method getrealOf takes unit ownerUnit returns thistype
+        return game.gamers[ GetPlayerId( GetOwningPlayer(ownerUnit) )]
+    endmethod
+    
+    static method create takes integer index returns thistype
+        local thistype this = thistype.allocate()
+            set this.player = Player(index)
+            set this.index  = index
+            set this.flag  = GetPlayerController( this.player ) == MAP_CONTROL_USER and GetPlayerSlotState(this.player) == PLAYER_SLOT_STATE_PLAYING
+        return this
+    endmethod
+endstruct

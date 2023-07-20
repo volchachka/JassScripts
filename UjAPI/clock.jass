@@ -1,0 +1,62 @@
+struct clock
+    timer   timer   = null
+    integer handleID= 0x0
+    
+    integer tick    = 0x0
+    integer took    = 0x0
+    integer count   = 0x0
+    integer alarm   = 0x0
+    integer final   = 0x0
+ 
+    real    timeout     = 0.
+    boolean periodic    = false 
+
+    method pause takes nothing returns nothing
+        call PauseTimer(this.timer)
+    endmethod
+    
+    method resume takes nothing returns nothing
+        call ResumeTimer( this.timer )
+    endmethod
+    
+    method start takes real timeout, boolean periodic, code handlerFunc returns nothing
+        set     this.timeout  = timeout
+        set     this.periodic = periodic
+        
+        call    SaveCode( UjAPI, this.handleID, 1, handlerFunc )
+        
+        call TimerStart ( this.timer, timeout, periodic, handlerFunc )
+    endmethod
+
+    method restart takes nothing returns nothing
+        call PauseTimer( this.timer )
+        call TimerStart( this.timer, this.timeout, this.periodic, LoadCode( UjAPI, this.handleID, 1) )
+    endmethod
+    
+    method load takes integer index returns integer
+        return LoadInteger( UjAPI, this.handleID, index+10 ) - 1
+    endmethod
+    
+    method save takes integer index, integer data returns nothing
+        call SaveInteger( UjAPI, this.handleID, index+10, data + 1 )
+    endmethod
+    
+    static method expired takes nothing returns thistype
+        return LoadInteger ( UjAPI, GetHandleId(GetExpiredTimer()), 0 ) - 1
+    endmethod
+    
+    static method of takes timer clockTimer returns thistype
+        return LoadInteger ( UjAPI, GetHandleId(clockTimer), 0 ) - 1 
+    endmethod
+    
+    static method create takes nothing returns thistype
+        local thistype this = thistype.allocate()
+        
+        set     this.handleID   = GetHandleId(this.timer)
+        set     this.timer      = CreateTimer()
+        
+        call    SaveInteger ( UjAPI, this.handleID, 0, this + 1 )
+        
+        return this
+    endmethod
+endstruct

@@ -1,0 +1,67 @@
+struct object
+    integer     processes   = 0x0
+    unit        unit        = null
+    mob         mob         = -1
+    
+    gamer       gamer       = 0  // Default: Red Player 
+    
+    method destroy takes nothing returns nothing
+        if this.mob >= 0 then
+            call mob.destroy()
+        endif
+        set this.unit = null
+       call this.deallocate()
+    endmethod
+    
+    static method callback  takes nothing returns nothing
+        local clock     xclock  = clock.expired ( )
+        local thistype  this    = xclock.load   ( 0 )
+        
+        if this.processes < 1 then
+            call xclock.pause  ()
+            call   this.destroy()
+            call xclock.destroy()
+        endif
+        
+    endmethod
+    
+    method addExtraAttack takes integer addAttack returns nothing
+        local boolean onAttack1 = GetUnitWeaponBooleanField( this.unit, UNIT_WEAPON_BF_ATTACKS_ENABLED, 0 )
+        local boolean onAttack2 = GetUnitWeaponBooleanField( this.unit, UNIT_WEAPON_BF_ATTACKS_ENABLED, 0 )
+        if onAttack1 then
+            call SetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0, GetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0 ) + addAttack )
+        elseif onAttack2 then
+            call SetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 1, GetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0 ) + addAttack )
+        endif
+    endmethod
+    
+    method waitDestroy takes nothing returns nothing
+        local clock xclock = clock.create()
+        call xclock.save ( 0,    this )
+        call xclock.start( 0.05, true, function thistype.callback )
+    endmethod
+    
+    method except takes nothing returns nothing
+        set this.processes = 0x0
+    endmethod
+    
+    method invulnerable takes boolean isInvulnerable returns nothing
+        call SetUnitInvulnerable( this.unit, isInvulnerable )
+    endmethod
+    
+    static method getreal takes unit data returns thistype
+        return GetUnitUserData( data ) - 1
+    endmethod
+    
+    static method create takes unit wUnit returns thistype
+        local thistype this = thistype.allocate()
+            set this.unit = wUnit
+            set this.gamer = gamer.getrealOf(wUnit)
+            call SetUnitUserData( this.unit, this + 1 )
+        return this
+    endmethod
+endstruct
+
+function CreateObjectAtRect takes gamer gmr, integer typeID, rect rct, real face returns object
+    return object.create( CreateUnit( gmr.player, typeID, GetRectCenterX(rct), GetRectCenterY(rct), face ) )
+endfunction

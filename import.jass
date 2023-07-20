@@ -1,1 +1,15 @@
+// Import for Reforged
+
 //! import "Main.jass"
+
+
+// Import for UjAPI
+
+//! import "JassScripts/UjAPI/kernel.jass"
+//! import "JassScripts/UjAPI/clock.jass"
+//! import "JassScripts/UjAPI/object.jass"
+//! import "JassScripts/UjAPI/gamer.jass"
+//! import "JassScripts/UjAPI/spell.jass"
+//! import "JassScripts/UjAPI/game.jass"
+
+//! import "ujMain.jass"

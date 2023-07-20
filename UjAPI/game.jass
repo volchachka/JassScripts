@@ -1,0 +1,99 @@
+struct game
+    static boolean              active      = false
+    static gamer        array   gamers
+    
+    static integer              gold        = 2 // gold per seconds
+    static integer              point       = 1 // wintercoin per seconds
+    static integer              credit      = 300
+    
+    static real                 goldRatio   = 0.75 // gold ratio per seconds
+    static real                 pointRatio  = 0.0 // wintercoin ratio per seconds
+    
+    static real                 factor      = 0.275
+    
+    static real                 heroStartResistance = 0.05
+    
+            trigger             trigger             = null
+            triggeraction       triggeraction       = null
+            triggercondition    triggercondition    = null
+            filterfunc          filterfunc          = null
+            conditionfunc       conditionfunc       = null
+            
+            method destroy takes nothing returns nothing
+                call DisableTrigger( this.trigger)
+                
+                if this.triggercondition !=null then
+                    call TriggerRemoveCondition( this.trigger, this.triggercondition )
+                    if this.conditionfunc != null then
+                        call DestroyCondition( this.conditionfunc )
+                    endif
+                endif
+                
+                if this.filterfunc != null then
+                    call DestroyFilter( this.filterfunc )
+                endif
+                
+                if this.triggeraction != null then
+                    call TriggerRemoveAction( this.trigger, this.triggeraction )
+                endif
+                
+                set this.trigger            = null
+                set this.triggeraction      = null
+                set this.triggercondition   = null
+                set this.filterfunc         = null
+                set this.conditionfunc      = null
+                
+                call this.deallocate()
+            endmethod
+            
+            method lag takes real timeout returns nothing
+                call TriggerRegisterTimerEvent( this.trigger, timeout, false )
+            endmethod
+            
+            method interval takes real timeout returns nothing
+                call TriggerRegisterTimerEvent( this.trigger, timeout, true )
+            endmethod
+            
+            method disable takes nothing returns nothing
+                call DisableTrigger( this.trigger )
+            endmethod
+            
+            method enable takes nothing returns nothing
+                call EnableTrigger(  this.trigger )
+            endmethod
+            
+            static method getreal takes nothing returns thistype
+                return LoadInteger( UjAPI, GetHandleId(GetTriggeringTrigger()), 0 ) - 1
+            endmethod
+            
+            method action takes code handlerFunc returns nothing
+                set this.triggeraction = TriggerAddAction( this.trigger, handlerFunc)
+            endmethod
+            
+            method condition takes code handlerFunc returns nothing
+                set this.conditionfunc = Condition( handlerFunc )
+                set this.triggercondition = TriggerAddCondition( this.trigger, this.conditionfunc )
+            endmethod
+            
+            method conditionZ takes conditionfunc cf returns nothing
+                set this.triggercondition = TriggerAddCondition( this.trigger, cf )
+            endmethod
+            
+            method unitsEvent takes gamer gmr, playerunitevent playerUnitEvent returns nothing
+                call TriggerRegisterPlayerUnitEvent( this.trigger, gmr.player, playerUnitEvent, null )
+            endmethod
+            
+            method unitsEventEx takes gamer gmr, playerunitevent playerUnitEvent, code handlerFunc returns nothing
+                if this.filterfunc != null then
+                    set this.filterfunc = Filter(handlerFunc)
+                endif
+                call TriggerRegisterPlayerUnitEvent( this.trigger, gmr.player, playerUnitEvent, this.filterfunc )
+            endmethod
+            
+            static method create takes nothing returns thistype
+                local thistype this = thistype.allocate()
+                    set this.trigger = CreateTrigger()
+                    call SaveInteger( UjAPI, GetHandleId(this.trigger), 0, this + 1 )
+                return this
+            endmethod
+endstruct
