@@ -1,3 +1,4 @@
 globals
-    integer gIndex = 0x0
+    integer gIndex      = 0x0
+    integer gPointer    = 0x0 
 endglobals
