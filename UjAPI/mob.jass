@@ -1,0 +1,18 @@
+struct mob
+    
+    real    orderX  = 0.
+    real    orderY  = 0.
+    integer order   = 0
+
+    method destroy takes nothing returns nothing
+        set this.orderX = 0.
+        set this.orderY = 0.
+        set this.order  = 0
+
+        call this.deallocate()    
+    endmethod
+
+    static method create takes nothing returns thistype
+        return thistype.allocate()
+    endmethod
+endstruct
