@@ -10,6 +10,41 @@ struct clock
  
     real    timeout     = 0.
     boolean periodic    = false 
+    boolean autoDestroy = false
+    
+    method destroy takes nothing returns nothing
+        call DestroyTimer( this.timer )
+        
+        set this.timer      = null
+        set this.handleID   = 0x0
+    
+        set this.tick    = 0x0
+        set this.took    = 0x0
+        set this.count   = 0x0
+        set this.alarm   = 0x0
+        set this.final   = 0x0
+
+        set this.autoDestroy = false
+
+        call this.deallocate()    
+
+    endmethod
+
+    method load takes integer index returns integer
+        return LoadInteger( UjAPI, this.handleID, index+10 ) - 1
+    endmethod
+    
+    static method of takes timer clockTimer returns thistype
+        return LoadInteger ( UjAPI, GetHandleId(clockTimer), 0 ) - 1 
+    endmethod
+
+    method save takes integer index, integer data returns nothing
+        call SaveInteger( UjAPI, this.handleID, index+10, data + 1 )
+    endmethod
+    
+    static method expired takes nothing returns thistype
+        return LoadInteger ( UjAPI, GetHandleId(GetExpiredTimer()), 0 ) - 1
+    endmethod
 
     method pause takes nothing returns nothing
         call PauseTimer(this.timer)
@@ -18,7 +53,12 @@ struct clock
     method resume takes nothing returns nothing
         call ResumeTimer( this.timer )
     endmethod
-    
+
+    method restart takes nothing returns nothing
+        call PauseTimer( this.timer )
+        call TimerStart( this.timer, this.timeout, this.periodic, LoadCode( UjAPI, this.handleID, 1) )
+    endmethod
+
     method start takes real timeout, boolean periodic, code handlerFunc returns nothing
         set     this.timeout  = timeout
         set     this.periodic = periodic
@@ -28,25 +68,42 @@ struct clock
         call TimerStart ( this.timer, timeout, periodic, handlerFunc )
     endmethod
 
-    method restart takes nothing returns nothing
-        call PauseTimer( this.timer )
-        call TimerStart( this.timer, this.timeout, this.periodic, LoadCode( UjAPI, this.handleID, 1) )
-    endmethod
+    method launch takes  real timeout, code handlerFunc returns nothing
+
+        set     this.periodic = timeout < 0
+
+        if periodic then 
+            set     this.timeout  = timeout * -1
+        else
+            set     this.timeout  = timeout
+        endif 
+
+        call    SaveCode( UjAPI, this.handleID, 1, handlerFunc )
     
-    method load takes integer index returns integer
-        return LoadInteger( UjAPI, this.handleID, index+10 ) - 1
+        call TimerStart ( this.timer, this.timeout, this.periodic, handlerFunc )
     endmethod
-    
-    method save takes integer index, integer data returns nothing
-        call SaveInteger( UjAPI, this.handleID, index+10, data + 1 )
+
+    static method executing takes nothing returns thistype
+        local thistype this = thistype.expired()
+
+        call ExecuteCode( LoadCode( UjAPI, this.handleID, 3 ) )
+        
+        if autoDestroy then
+            call this.pause()
+            call this.destroy()
+            return -1
+        endif
+
+        return this
     endmethod
-    
-    static method expired takes nothing returns thistype
-        return LoadInteger ( UjAPI, GetHandleId(GetExpiredTimer()), 0 ) - 1
-    endmethod
-    
-    static method of takes timer clockTimer returns thistype
-        return LoadInteger ( UjAPI, GetHandleId(clockTimer), 0 ) - 1 
+
+    method execute takes string funcName, real timeout returns nothing
+        local code func = GetCodeByName( funcName )
+
+        call SaveCode   ( UjAPI,    this.handleID,  3,  func )
+        call this.start ( timeout,  false, function thistype.executing  )
+
+        set func = null
     endmethod
     
     static method create takes nothing returns thistype
@@ -55,6 +112,18 @@ struct clock
         set     this.handleID   = GetHandleId(this.timer)
         set     this.timer      = CreateTimer()
         
+        call    SaveInteger ( UjAPI, this.handleID, 0, this + 1 )
+        
+        return this
+    endmethod
+
+    static method createx takes boolean autoDestroy returns thistype
+        local thistype this = thistype.allocate()
+        
+        set     this.handleID       = GetHandleId(this.timer)
+        set     this.timer          = CreateTimer()
+        set     this.autoDestroy    = autoDestroy 
+
         call    SaveInteger ( UjAPI, this.handleID, 0, this + 1 )
         
         return this
