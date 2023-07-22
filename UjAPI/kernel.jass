@@ -3,8 +3,18 @@ globals
     hashtable UjAPI         = InitHashtable() // Wroom Wroom Wrooom
     hashtable Volchachka    = InitHashtable() // Unryze, it's bug again!!
     hashtable Unryze        = InitHashtable() // Fuck! Fucking the Semyorka
+
+    group       gGroup      = null
+    rect        world       = null
 endglobals
 
 function Debug takes string message returns nothing
     call DisplayTimedTextToPlayer( GetLocalPlayer(), 0., 0., 15., message )
 endfunction
+
+library preInitialization initializer preInit
+    function preInit takes nothing returns nothing
+        set gGroup = CreateGroup()
+        set world  = GetWorldBounds()
+    endfunction
+endlibrary
