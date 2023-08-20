@@ -1,0 +1,143 @@
+struct vrgba
+
+    integer red     = $0
+    integer green   = $0
+    integer blue    = $0
+    integer alpha   = $0
+
+    string  hex     = "FFFFFF"
+
+    method toHex takes nothing returns nothing
+        set this.hex = HexZero( IntToHex(this.alpha), 2 )
+        set this.hex = this.hex + HexZero( IntToHex(this.red), 2 )
+        set this.hex = this.hex + HexZero( IntToHex(this.blue), 2 )
+        set this.hex = this.hex + HexZero( IntToHex(this.green), 2 )
+    endmethod
+    
+    static method create takes nothing returns thistype
+        local thistype this = thistype.allocate()
+            set this.red = 255
+            set this.green = 255
+            set this.blue = 255
+            set this.alpha = 255
+        return this
+    endmethod
+endstruct
+
+struct vec3
+    real x = 0.
+    real y = 0.
+    real z = 0.
+
+    method destroy takes nothing returns nothing
+        set this.x = 0.
+        set this.y = 0.
+        set this.z = 0.
+
+        call this.deallocate()
+    endmethod
+
+    method distance takes thistype that returns real
+        return MathDistanceBetweenPoints( this.x, this.y, that.x, that.y )
+    endmethod
+
+    method angle takes thistype that returns real
+        return MathAngleBetweenPoints( this.x, this.y, that.x, that.y )
+    endmethod
+
+    static method rect takes rect rt returns thistype
+        local thistype this = thistype.allocate()
+            set this.x = GetRectCenterX(rt)
+            set this.y = GetRectCenterX(rt)
+        return this
+    endmethod
+
+    static method loc takes location l, boolean withZ returns thistype
+        local thistype this = thistype.allocate()
+            set this.x = GetLocationX(l)
+            set this.y = GetLocationY(l)
+            if withZ then
+                set this.z = GetLocationZ(l)
+            endif
+        return this
+    endmethod
+
+    static method object takes object o returns thistype
+       local thistype this = thistype.allocate()
+        set this.x = o.x
+        set this.y = o.y
+
+        return this
+    endmethod
+
+    static method xy takes real x, real y returns thistype
+        local thistype this = thistype.allocate()
+            set this.x = x
+            set this.y = y
+        return this
+    endmethod
+
+    static method xyz takes real x, real y, real z returns thistype
+        local thistype this = thistype.allocate()
+            set this.x = x
+            set this.y = y
+            set this.z = z
+        return this
+    endmethod
+
+    static method create takes nothing returns thistype
+        return thistype.allocate()
+    endmethod
+endstruct
+
+struct vrect
+    vec3 v3 = $0
+    real maxX = 0.
+    real minX = 0.
+    real minY = 0.
+    real maxY = 0.
+
+    method destroy takes nothing returns nothing
+        
+        set this.maxX   = 0.
+        set this.minX   = 0.
+        set this.minY   = 0.
+        set this.maxY   = 0.
+
+        call this.v3.destroy()
+
+        set this.v3 = $0
+
+        call this.deallocate()
+    endmethod
+
+    method inRectV3 takes vec3 v3 returns boolean
+        return v3.x >= this.minX and v3.x <= this.maxX and v3.y >= this.minY and v3.y >= this.maxY
+    endmethod
+
+    method register takes rect rt returns nothing
+        set this.v3     = vec3.rect(rt)
+        set this.maxX   = GetRectMaxX(rt) + 50.
+        set this.minX   = GetRectMinX(rt) - 50.
+        set this.minY   = GetRectMinY(rt) - 50.
+        set this.maxY   = GetRectMaxY(rt) + 50.
+    endmethod
+
+    static method rect takes rect rt returns thistype
+        local thistype this = thistype.allocate()
+
+        set this.v3     = vec3.rect(rt)
+        set this.maxX   = GetRectMaxX(rt) + 50.
+        set this.minX   = GetRectMinX(rt) - 50.
+        set this.minY   = GetRectMinY(rt) - 50.
+        set this.maxY   = GetRectMaxY(rt) + 50.
+
+        return this
+    endmethod
+
+    static method create takes nothing returns thistype
+        local thistype this = thistype.allocate()
+            set this.v3 = -1
+        return this
+    endmethod
+endstruct

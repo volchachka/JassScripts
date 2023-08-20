@@ -7,14 +7,22 @@ struct clock
     integer count   = 0x0
     integer alarm   = 0x0
     integer final   = 0x0
- 
+    integer processes = 0x0
+
     real    timeout     = 0.
     boolean periodic    = false 
     boolean autoDestroy = false
     
+    handlelist trcList  = null
+
     method destroy takes nothing returns nothing
         call DestroyTimer( this.timer )
         
+        if this.trcList != null then
+            call HandleListDestroy( this.trcList )
+        endif
+
+        set this.trcList    = null
         set this.timer      = null
         set this.handleID   = 0x0
     
@@ -23,6 +31,7 @@ struct clock
         set this.count   = 0x0
         set this.alarm   = 0x0
         set this.final   = 0x0
+        set this.processes = 0x0
 
         set this.autoDestroy = false
 
@@ -66,6 +75,85 @@ struct clock
         call    SaveCode( UjAPI, this.handleID, 1, handlerFunc )
         
         call TimerStart ( this.timer, timeout, periodic, handlerFunc )
+    endmethod
+
+    method setTimeout takes real timeout returns nothing
+        set this.timeout = timeout
+        call TimerSetTimeout( this.timer, timeout )
+    endmethod
+
+    method setPeriodic takes boolean periodic returns nothing
+        set this.periodic = periodic
+        call TimerSetPeriodic( this.timer, periodic )
+    endmethod
+
+    method callback takes code newCallback returns nothing
+        call TimerSetCallback( this.timer, newCallback )
+        call SaveCode   ( UjAPI,    this.handleID,  1,  newCallback )
+    endmethod
+
+    method addTracing takes clock watch returns nothing
+        if this.trcList == null then
+            set this.trcList = HandleListCreate()
+        endif
+        if watch.trcList == null then
+            set watch.trcList = HandleListCreate()
+        endif
+
+        call HandleListAddHandle( this.trcList, watch.timer )
+        call HandleListAddHandle( watch.trcList, this.timer )
+    endmethod
+
+    method removeTracing takes clock watch returns nothing
+        if this.trcList != null then
+            call HandleListRemoveHandle( this.trcList, watch.timer )
+        endif
+        if watch.trcList != null then
+            call HandleListRemoveHandle( watch.trcList, this.timer )
+        endif
+    endmethod
+    
+    method except takes nothing returns nothing
+        call HandleListDestroy( this.trcList )
+        set this.trcList    = null
+        set this.processes  = $0
+    endmethod
+
+    
+    method process takes nothing returns nothing
+         set this.processes = this.processes + 1
+    endmethod
+
+    method terminated takes nothing returns nothing
+        set this.processes = this.processes - 1
+   endmethod 
+
+    // Возращает таймеры, с которыми взаимодействует. 
+    method tracert takes nothing returns handlelist
+        local handlelist    new_trcList     = HandleListCreate()
+        local integer       trcListCount    = HandleListGetCount(this.trcList)
+        local timer         timerData       =   null
+        local clock         watch           = $0
+        local integer       x               = $0
+        
+        loop
+            set timerData =  HandleToTimer( HandleListGetHandleByIndex( this.trcList, x ) )
+                set watch = clock.of(timerData)
+                if watch.trcList != null then 
+                    if HandleListContainsHandle( watch.trcList, this.timer ) then
+                        call HandleListAddHandle( new_trcList, timerData )
+                    endif
+                endif
+            exitwhen x >= trcListCount
+        endloop
+
+        call HandleListDestroy( this.trcList )
+        set this.trcList = new_trcList
+
+        set new_trcList = null
+        set timerData   = null
+
+        return this.trcList
     endmethod
 
     method launch takes  real timeout, code handlerFunc returns nothing

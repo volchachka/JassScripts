@@ -5,6 +5,9 @@ struct object
     
     gamer       gamer       = 0  // Default: Red Player 
     
+    integer     handleID    = 0
+    integer     typeID      = 0
+
     method destroy takes nothing returns nothing
         if this.mob >= 0 then
             call mob.destroy()
@@ -25,9 +28,80 @@ struct object
         
     endmethod
     
+    method operator x takes nothing returns real
+        return GetWidgetX( this.unit )
+    endmethod
+
+    method operator x= takes real x returns nothing
+        call SetWidgetX( this.unit, x )
+    endmethod
+
+    method operator y takes nothing returns real
+        return GetWidgetY( this.unit )
+    endmethod
+
+    method operator y= takes real y returns nothing
+        call SetWidgetY( this.unit, y )
+    endmethod
+
+    method addAbility takes integer abilityId returns nothing
+        call UnitAddAbility( this.unit, abilityId )
+    endmethod
+
+    method hasAbility takes integer abilityId returns boolean
+        return GetUnitAbilityLevel( this.unit, abilityId ) > 0
+    endmethod
+
+    method abilityLevel takes integer abilityId returns integer
+        return GetUnitAbilityLevel( this.unit, abilityId )
+    endmethod
+
+    method hasBuff takes integer buffId returns boolean
+        return GetUnitBuffLevel(  this.unit, buffId ) > 0
+    endmethod
+
+    method buffLevel takes integer buffId returns integer
+        return GetUnitBuffLevel(  this.unit, buffId )
+    endmethod
+
+    // Works in v1.0.30.109 
+    method addBonusAttack takes integer addAttack returns nothing
+        local ability ab = GetUnitAbility( this.unit, 'AItk' )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0) + addAttack )
+        set ab = null
+    endmethod
+
+    // Works since v1.0.30.109 
+    method addBonusArmor takes integer addArmor returns nothing
+        local ability ab = GetUnitAbility( this.unit, 'AId0' )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_DEFENSE_BONUS_IDEF, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_DEFENSE_BONUS_IDEF, 0 ) + addArmor )
+        set ab = null
+    endmethod
+
+    // Works since v1.0.30.109 
+    method addBonusStr takes integer addStr returns nothing
+        local ability ab = GetUnitAbility( this.unit, 'Aamk' )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_STRENGTH_BONUS_ISTR, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_STRENGTH_BONUS_ISTR, 0 ) + addStr )
+        set ab = null
+    endmethod
+
+    // Works since v1.0.30.109 
+    method addBonusAgi takes integer addAgi returns nothing
+        local ability ab = GetUnitAbility( this.unit, 'Aamk' )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_AGILITY_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_AGILITY_BONUS, 0 ) + addAgi )
+        set ab = null
+    endmethod
+
+    // Works since v1.0.30.109 
+    method addBonusInt takes integer addInt returns nothing
+        local ability ab = GetUnitAbility( this.unit, 'Aamk' )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_INTELLIGENCE_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_INTELLIGENCE_BONUS, 0 ) + addInt )
+        set ab = null
+    endmethod
+
     method addExtraAttack takes integer addAttack returns nothing
         local boolean onAttack1 = GetUnitWeaponBooleanField( this.unit, UNIT_WEAPON_BF_ATTACKS_ENABLED, 0 )
-        local boolean onAttack2 = GetUnitWeaponBooleanField( this.unit, UNIT_WEAPON_BF_ATTACKS_ENABLED, 0 )
+        local boolean onAttack2 = GetUnitWeaponBooleanField( this.unit, UNIT_WEAPON_BF_ATTACKS_ENABLED, 1 )
         if onAttack1 then
             call SetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0, GetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0 ) + addAttack )
         elseif onAttack2 then
@@ -52,11 +126,22 @@ struct object
     static method getreal takes unit data returns thistype
         return GetUnitUserData( data ) - 1
     endmethod
+
+    method silence takes nothing returns nothing
+        call UnitApplySilence( this.unit, true )
+    endmethod
+
+    method unSilence takes nothing returns nothing
+        call UnitApplySilence( this.unit, false )
+    endmethod
     
     static method create takes unit wUnit returns thistype
         local thistype this = thistype.allocate()
             set this.unit = wUnit
             set this.gamer = gamer.getrealOf(wUnit)
+
+            set this.handleID   = GetHandleId( this.unit )
+            set this.typeID     = GetUnitTypeId( this.unit )
             call SetUnitUserData( this.unit, this + 1 )
         return this
     endmethod

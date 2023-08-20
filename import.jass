@@ -6,7 +6,11 @@
 // Import for UjAPI
 
 //! import "JassScripts/UjAPI/kernel.jass"
+//! import "JassScripts/UjAPI/codelist.jass"
+//! import "JassScripts/UjAPI/logger.jass"
+//! import "JassScripts/UjAPI/vectors.jass"
 //! import "JassScripts/UjAPI/clock.jass"
+//! import "JassScripts/UjAPI/sfx.jass"
 //! import "JassScripts/UjAPI/mob.jass"
 //! import "JassScripts/UjAPI/object.jass"
 //! import "JassScripts/UjAPI/gamer.jass"

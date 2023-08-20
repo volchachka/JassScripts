@@ -13,6 +13,7 @@ struct spell
     real mps        = 0.
     real dps        = 0.
     
+
     static method ofClock takes clock xClock returns thistype
         return xClock.load(-8)
     endmethod
@@ -21,6 +22,14 @@ struct spell
         return clock.expired().load(-8)
     endmethod
     
+    method interval takes real timeout, code callback returns nothing
+        call this.clock.launch(-timeout, callback )
+    endmethod
+
+    method once takes real timeout, code callback returns nothing
+        call this.clock.launch(timeout, callback )
+    endmethod
+
     static method create takes nothing returns thistype
         local thistype this = thistype.allocate()
         

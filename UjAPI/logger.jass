@@ -1,0 +1,36 @@
+struct logger
+    textfilehandle logfile = null
+
+    method destroy takes nothing returns nothing
+        call TextFileClose(this.logfile)
+        set this.logfile = null
+        call this.deallocate()
+    endmethod
+
+    method log takes string str, boolean isTimed returns nothing
+        local string unryze = ""
+        if isTimed then
+            set unryze = "[" + I2S(GetLocalTime(TIME_TYPE_DAY))
+            set unryze = unryze + "/" +  I2S(GetLocalTime(TIME_TYPE_MONTH))
+            set unryze = unryze + "/" +  I2S(GetLocalTime(TIME_TYPE_YEAR))
+            set unryze = unryze + "] <" +  I2S(GetLocalTime(TIME_TYPE_HOUR)) 
+            set unryze = unryze + ":" +  I2S(GetLocalTime(TIME_TYPE_MINUTE))
+            set unryze = unryze + ":" +  I2S(GetLocalTime(TIME_TYPE_SECOND))
+            set unryze = unryze + ":" +  I2S(GetLocalTime(TIME_TYPE_MILLISECOND))+"> @->"
+
+            set unryze = unryze + str
+        else
+            set unryze = str
+        endif
+
+        call  TextFileWriteLine( this.logfile, unryze )
+    endmethod
+    
+    static method create takes string fileName returns thistype
+        local thistype this = thistype.allocate()        
+       
+        set this.logfile = TextFileOpen(fileName)
+
+        return this
+    endmethod
+endstruct

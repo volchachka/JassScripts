@@ -6,10 +6,46 @@ globals
 
     group       gGroup      = null
     rect        world       = null
+
+    // For File logging
+    textfilehandle  LoggerFile  = null
+    boolean         LoggerOn    = false
 endglobals
 
 function Debug takes string message returns nothing
     call DisplayTimedTextToPlayer( GetLocalPlayer(), 0., 0., 15., message )
+endfunction
+
+function Log takes string textLog returns nothing
+    if LoggerOn then
+        call TextFileWriteLine( LoggerFile, textLog )
+    endif
+endfunction
+
+function HexZero takes string hex, integer zeroCount returns string
+    local integer len = StringLength(hex)
+
+    if zeroCount == 2 then 
+        if len < 2 then
+            return "0"+hex
+        endif
+    elseif zeroCount == 3 then
+        if len < 2 then
+            return "00"+hex
+        elseif len < 3 then
+            return "0"+hex
+        endif
+    elseif zeroCount == 4 then
+        if len < 2 then
+            return "000"+hex
+        elseif len < 3 then
+            return "00"+hex
+        elseif len < 4 then
+            return "0"+hex
+        endif
+    endif
+
+    return hex
 endfunction
 
 library preInitialization initializer preInit

@@ -1,0 +1,48 @@
+struct codelist 
+    integer array   data    [512]
+    integer         count   = 0
+
+    method destroy takes nothing returns nothing
+        local integer x = $0
+        
+        loop
+                set this.data[x] = $0
+            set x = x + $1
+            exitwhen x >= this.count
+        endloop
+        
+        set this.count = $0
+
+        call this.deallocate()
+    endmethod
+
+    method code takes integer i returns code
+        return I2C(this.data[i])
+    endmethod
+
+    method execute takes integer i  returns nothing
+        call ExecuteCode( I2C(this.data[i]) )
+    endmethod
+
+    method add takes code c returns integer
+        if count < 512 then
+            set this.data[this.count] = C2I(c)
+            set this.count = count + 1
+        endif
+
+        return this.count - 1
+    endmethod
+
+    static method create takes nothing returns thistype
+        local thistype  this    = thistype.allocate()
+        local integer   x       = $0
+
+        loop
+                set this.data[x] = $0
+            set x = x + 1
+            exitwhen x > 511
+        endloop
+
+        return this
+    endmethod
+endstruct

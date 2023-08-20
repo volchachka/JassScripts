@@ -1,0 +1,66 @@
+struct sfx
+    effect  effect  = null
+
+    gamer   owner   = $0
+    object  source  = $0
+
+    boolean autoDestroy = false
+
+    vrgba   rgba    = $0
+
+    method destroy takes nothing returns nothing
+        if this.autoDestroy then
+            call DestroyEffect( this.effect )
+            call this.rgba.destroy()
+        endif
+
+        set this.effect = null
+        set this.owner  = $0
+
+        set this.rgba   = $0
+        call this.deallocate()
+    endmethod
+
+    method operator r= takes integer red returns nothing
+        set this.rgba.red = red
+        call SetSpecialEffectVertexColour( this.effect, this.rgba.red, this.rgba.green, this.rgba.blue, this.rgba.alpha )
+    endmethod
+
+    method operator r takes nothing returns integer
+        return this.rgba.red
+    endmethod
+
+    method operator file= takes string filePath returns nothing
+        call SetSpecialEffectModel( this.effect, filePath )
+    endmethod
+
+    method push takes thistype that returns nothing
+        set that.effect = this.effect
+        set this.autoDestroy = false
+        
+        call that.rgba.destroy()
+        
+        set that.rgba = this.rgba
+        
+        call this.destroy()
+    endmethod
+
+    static method createx takes vec3 v3, string file, boolean autoDestroy returns thistype
+        local thistype this = thistype.allocate()
+
+        call AddSpecialEffect( file, v3.x, v3.y )
+        set this.autoDestroy = autoDestroy
+        set this.rgba = vrgba.create()
+
+        return thistype.allocate()
+    endmethod
+
+    static method create takes boolean autoDestroy returns thistype
+        local thistype this = thistype.allocate()
+        
+        set this.autoDestroy = autoDestroy
+        set this.rgba = vrgba.create()
+
+        return thistype.allocate()
+    endmethod
+endstruct
