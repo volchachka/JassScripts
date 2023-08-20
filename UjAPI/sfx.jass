@@ -30,10 +30,45 @@ struct sfx
         return this.rgba.red
     endmethod
 
-    method operator file= takes string filePath returns nothing
-        call SetSpecialEffectModel( this.effect, filePath )
+    method operator g= takes integer green returns nothing
+        set this.rgba.green = green
+        call SetSpecialEffectVertexColour( this.effect, this.rgba.red, this.rgba.green, this.rgba.blue, this.rgba.alpha )
     endmethod
 
+    method operator g takes nothing returns integer
+        return this.rgba.green
+    endmethod
+
+    method operator b= takes integer blue returns nothing
+        set this.rgba.blue = blue
+        call SetSpecialEffectVertexColour( this.effect, this.rgba.red, this.rgba.green, this.rgba.blue, this.rgba.alpha )
+    endmethod
+
+    method operator b takes nothing returns integer
+        return this.rgba.blue
+    endmethod
+
+    method operator a= takes integer alpha returns nothing
+        set this.rgba.alpha = alpha
+        call SetSpecialEffectVertexColour( this.effect, this.rgba.red, this.rgba.green, this.rgba.blue, this.rgba.alpha )
+    endmethod
+
+    method operator a takes nothing returns integer
+        return this.rgba.alpha
+    endmethod
+
+    method operator model= takes string filePath returns nothing
+        call SetSpecialEffectModel( this.effect, filePath )
+    endmethod
+    
+    method operator reloc= takes vec3 v3 returns nothing
+        call SetSpecialEffectPosition( this.effect, v3.x, v3.y )
+    endmethod
+
+    method xreloc takes vec3 v3 returns nothing
+        call SetSpecialEffectPositionEx( this.effect, v3.x, v3.y, v3.z )
+    endmethod
+    
     method push takes thistype that returns nothing
         set that.effect = this.effect
         set this.autoDestroy = false
