@@ -90,6 +90,10 @@ struct game
                 call TriggerRegisterPlayerUnitEvent( this.trigger, gmr.player, playerUnitEvent, this.filterfunc )
             endmethod
             
+            method unitEvent takes object obj, unitevent unitEv3nt returns nothing
+                call TriggerRegisterUnitEvent( this.trigger, obj.unit, unitEv3nt )
+            endmethod
+            widgetevent
             static method create takes nothing returns thistype
                 local thistype this = thistype.allocate()
                     set this.trigger = CreateTrigger()
