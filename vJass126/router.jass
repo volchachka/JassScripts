@@ -1,0 +1,215 @@
+// Router of the Pseudo Events [vJass]
+globals
+    routevent EVENT_ROUT_NOTHING    = $0
+    routevent EVENT_ROUT_HEALING    = $0
+    routevent EVENT_ROUT_DAMAGING   = $0
+
+    router    DamageRouter          = $0
+
+    routdamage RoutDamagePure       = $0
+endglobals
+
+struct routdata
+    
+    unit source     = null
+    unit destinate  = null
+
+    real floatValue     = 0.
+    real floatValueZ    = 0.
+
+    integer dataValue   = $0
+    integer dataValueZ  = $0
+
+    method sourceRegister takes unit srcUnit returns unit
+        set this.source         = srcUnit
+        return this.source
+    endmethod
+
+    method destinateRegister takes unit dstUnit returns unit
+        set this.destinate         = dstUnit
+        return this.destinate
+    endmethod
+
+    method floatRegister takes real fltValue returns real
+        set this.floatValue         = fltValue
+        return this.floatValue
+    endmethod
+
+    method floatRegisterZ takes real fltValue returns real
+        set this.floatValueZ         = fltValue
+        return this.floatValueZ
+    endmethod
+
+    method dataRegister takes integer intValue returns integer
+        set this.dataValue          = intValue
+        return this.dataValue
+    endmethod
+
+    method dataRegisterZ takes integer intValue returns integer
+        set this.dataValueZ         = intValue
+        return this.dataValueZ
+    endmethod
+
+    method destroy takes nothing returns nothing
+        set this.source         = null
+        set this.destinate      = null
+        set this.floatValue     = 0.
+        set this.floatValueZ    = 0.
+
+        set this.dataValue      = $0
+        set this.dataValueZ     = $0
+        
+        call this.deallocate()
+    endmethod
+
+    static method create takes nothing returns thistype
+        local thistype this = thistype.allocate()
+            
+        return this
+    endmethod  
+endstruct
+
+struct routevent
+    string      name = null
+    integer     id   = $0
+    routdata    data = $0
+
+    method register takes routdata rd returns nothing
+        set this.data = rd
+    endmethod
+
+    static method create takes string reName returns thistype
+        local thistype this = thistype.allocate()
+            set this.name   = reName
+            set this.id     = this
+        return this
+    endmethod    
+endstruct
+
+struct router
+    static  thistype    rendered    = $0
+    static  routevent   lastEvent   = $0
+
+    static  hashtable   data        = InitHashtable()
+
+            integer     routes      = $0
+     
+    method event takes routevent re returns thistype
+        set this.lastEvent = re
+        return this
+    endmethod
+    
+    method render takes string renderFunc returns nothing
+        set this.rendered = this
+        call ExecuteFunc( renderFunc )
+    endmethod
+
+    method add takes string routName, string renderFunc returns integer
+        local integer ri    = StringHash(routName)
+        
+        call SaveStr(  this.data, this.routes, ri, renderFunc )
+
+            set this.routes = this.routes + $1
+        return this.routes - $1
+    endmethod
+
+    method adjust takes integer z, string routName, string renderFunc returns integer
+        local integer ri    = StringHash(routName)
+        
+        call SaveStr(  this.data, z, ri, renderFunc )
+
+        return z
+    endmethod
+
+    method rout takes string routName returns nothing
+        local integer z     = $0
+        local string  rf    = null
+        local integer ri    = StringHash(routName)
+        loop
+            set rf = LoadStr(  this.data, z, ri )
+            if rf != null then
+                call this.render(rf)
+            endif
+            set z = z + $1
+            exitwhen z > this.routes
+        endloop
+    endmethod
+
+    method eventRout takes nothing returns nothing
+        local integer z     = $0
+        local string  rf    = null
+        local integer ri    = StringHash(this.lastEvent.name)
+        loop
+            set rf = LoadStr(  this.data, z, ri )
+            if rf != null then
+                call this.render(rf)
+            endif
+            set z = z + $1
+            exitwhen z > this.routes
+        endloop
+    endmethod
+
+    static method router takes nothing returns thistype
+        local thistype this = thistype.allocate()
+
+        return this
+    endmethod
+endstruct
+
+struct routdamage 
+    damagetype  damagetype  = null
+    attacktype  attacktype  = null
+    weapontype  weapontype  = null
+
+    boolean     isRanged    = true
+    boolean     isAttack    = true
+
+    static method create takes boolean isAttack, boolean isRanged, attacktype attackType , damagetype damageType, weapontype  weaponType returns thistype
+        local thistype this = thistype.allocate()
+            set this.isAttack   = isAttack
+            set this.isRanged   = isRanged
+
+            set this.attacktype = attackType
+            set this.damagetype = damageType
+            set this.weapontype = weaponType
+        return this
+    endmethod
+endstruct
+
+function RoutedDamageUnitTarget takes unit source, unit target, routdamage rd, real dmg returns boolean
+    local routdata  rdt     = routdata.create()
+    local boolean   logic   = false
+        set rdt.source = source
+        set rdt.destinate = target
+        set rdt.floatValue = dmg
+        
+        call EVENT_ROUT_DAMAGING.register(rdt)
+        call DamageRouter.event(EVENT_ROUT_DAMAGING).eventRout()
+
+        set dmg = rdt.floatValue
+        
+    set logic = UnitDamageTarget( source, target, dmg, rd.isAttack, rd.isRanged, rd.attacktype, rd.damagetype, rd.weapontype )
+        call rdt.destroy()
+    return logic
+endfunction
+
+function GetRoutDamaging takes nothing returns nothing
+    local routevent routEvent = router.lastEvent
+    local routdata  routData  = routEvent.data
+
+    call BJDebugMsg("Routed Damage: " + R2SW(routData.floatValue,8,3) )
+    call BJDebugMsg("Routed Source: " + I2S(GetHandleId(routData.source))+" || " + GetUnitName((routData.source)) )
+    call BJDebugMsg("Routed Destinate: " + I2S(GetHandleId(routData.destinate))+" || " + GetUnitName((routData.destinate)) )
+
+endfunction
+
+function InitRouterSettings takes nothing returns nothing
+    set DamageRouter = router.create()
+        call DamageRouter.add( "EVENT_ROUT_DAMAGING", "GetRoutDamaging" )
+
+    set RoutDamagePure = routdamage.create( true, true, ATTACK_TYPE_CHAOS, DAMAGE_TYPE_UNKNOWN, WEAPON_TYPE_WHOKNOWS )
+    
+    set EVENT_ROUT_NOTHING  = routevent.create("EVENT_ROUT_NOTHING")
+    set EVENT_ROUT_HEALING  = routevent.create("EVENT_ROUT_HEALING")
+    set EVENT_ROUT_DAMAGING = routevent.create("EVENT_ROUT_DAMAGING")
+endfunction
