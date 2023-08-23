@@ -1,0 +1,76 @@
+struct tacticpoint
+    region  point   = null
+    integer funcler = $0
+
+    method setExecFunc takes code c returns nothing
+        set this.funcler = C2I(c)
+    endmethod
+
+    method exec takes nothing returns nothing
+        if funcler > $0 then
+            call ExecuteCode( I2C(this.funcler) )
+        endif
+    endmethod
+
+    method getreal takes nothing returns thistype
+        return LoadInteger( Volchachka, GetHandleId(GetTriggeringRegion()), 0 )
+    endmethod
+
+    method of takes region point returns thistype
+        return LoadInteger( Volchachka, GetHandleId(point), 0 )
+    endmethod
+
+    method release takes nothing returns nothing
+        call RemoveRegion(this.point)
+        set this.point   = null
+        set this.funcler = $0
+        call this.deallocate()
+    endmethod
+
+    method addCell takes real x, real y returns thistype
+            call RegionAddCell( this.point, x, y )
+        return this
+    endmethod
+
+    method addLocation takes location loc returns thistype
+            call RegionAddCellAtLoc( this.point, loc )
+        return this
+    endmethod
+
+    method addRect takes rect rct returns thistype
+            call RegionAddRect( this.point, rct )
+        return this
+    endmethod
+
+    static method cell takes real x, real y returns thistype
+        local thistype this = this.allocate()
+            set this.point = CreateRegion()
+            call RegionAddCell( this.point, x, y )
+            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this )
+        return this
+    endmethod
+
+    static method location takes location loc returns thistype
+        local thistype this = this.allocate()
+            set this.point = CreateRegion()
+            call RegionAddCellAtLoc( this.point, loc )
+            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this )
+        return this
+    endmethod
+
+    static method rect takes rect rct returns thistype
+        local thistype this = this.allocate()
+            set this.point = CreateRegion()
+            call RegionAddRect( this.point, rct )
+            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this )
+        return this
+    endmethod
+
+    static method tacticpoint takes nothing returns thistype
+        local thistype this = this.allocate()
+            set this.point = CreateRegion()
+            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this )
+        return this
+    endmethod
+
+endstruct

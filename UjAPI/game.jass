@@ -84,7 +84,7 @@ struct game
             endmethod
             
             method unitsEventEx takes gamer gmr, playerunitevent playerUnitEvent, code handlerFunc returns nothing
-                if this.filterfunc != null then
+                if this.filterfunc == null then
                     set this.filterfunc = Filter(handlerFunc)
                 endif
                 call TriggerRegisterPlayerUnitEvent( this.trigger, gmr.player, playerUnitEvent, this.filterfunc )
@@ -94,6 +94,28 @@ struct game
                 call TriggerRegisterUnitEvent( this.trigger, obj.unit, unitEv3nt )
             endmethod
             
+            method enterPoint takes tacticpoint tp returns nothing
+                call TriggerRegisterEnterRegion( this.trigger, tp.point, null )
+            endmethod
+
+            method enterPointEx takes tacticpoint tp, code handlerFunc returns nothing
+                if this.filterfunc == null then
+                    set this.filterfunc = Filter(handlerFunc)
+                endif
+                call TriggerRegisterEnterRegion( this.trigger, tp.point, this.filterfunc )
+            endmethod
+
+            method leavePoint takes tacticpoint tp returns nothing
+                call TriggerRegisterLeaveRegion( this.trigger, tp.point, null )
+            endmethod
+
+            method leavePointEx takes tacticpoint tp, code handlerFunc returns nothing
+                if this.filterfunc == null then
+                    set this.filterfunc = Filter(handlerFunc)
+                endif
+                call TriggerRegisterLeaveRegion( this.trigger, tp.point, this.filterfunc )
+            endmethod
+
             static method create takes nothing returns thistype
                 local thistype this = thistype.allocate()
                     set this.trigger = CreateTrigger()

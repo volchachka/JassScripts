@@ -13,6 +13,7 @@ struct spell
     real mps        = 0.
     real dps        = 0.
     
+    sfx  sfx        = -1
 
     static method ofClock takes clock xClock returns thistype
         return xClock.load(-8)

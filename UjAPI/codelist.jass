@@ -1,5 +1,5 @@
 struct codelist 
-    integer array   data    [512]
+    integer array   data    [256]
     integer         count   = 0
 
     method destroy takes nothing returns nothing
@@ -20,17 +20,55 @@ struct codelist
         return I2C(this.data[i])
     endmethod
 
-    method execute takes integer i  returns nothing
+    method execute takes integer i returns nothing
         call ExecuteCode( I2C(this.data[i]) )
     endmethod
 
+    method executeAll takes nothing returns nothing
+        local integer i = $0
+
+        loop
+            call ExecuteCode( I2C(this.data[i]) )
+            set i = i + $1
+            exitwhen i == this.count
+        endloop
+
+    endmethod
+
     method add takes code c returns integer
-        if count < 512 then
+        if count < 256 then
             set this.data[this.count] = C2I(c)
-            set this.count = count + 1
+            set this.count = count + $1
         endif
 
-        return this.count - 1
+        return this.count - $1
+    endmethod
+
+    method remove takes integer i returns nothing
+        local integer f     = $0
+        local integer x     = $0
+        local boolean is    = false
+
+        
+        set this.data[i] = $0
+
+        if i == (this.count- $1) then
+            set this.count = this.count - $1
+        else 
+            loop
+                if is then
+                    set this.data[x] = this.data[f]
+                    set x = f
+                else
+                    set is = f == i
+                    set x = f
+                endif
+                set f = f + $1
+                exitwhen f == this.count
+            endloop
+            set this.count = this.count - $1
+            set this.data[this.count] = $0
+        endif
     endmethod
 
     static method create takes nothing returns thistype
@@ -40,7 +78,7 @@ struct codelist
         loop
                 set this.data[x] = $0
             set x = x + 1
-            exitwhen x > 511
+            exitwhen x > 255
         endloop
 
         return this

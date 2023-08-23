@@ -64,6 +64,34 @@ struct object
         return GetUnitBuffLevel(  this.unit, buffId )
     endmethod
 
+    method isEnemy takes object o returns boolean
+        return IsUnitEnemy( o.unit, this.gamer.player )
+    endmethod
+
+    method isAlly takes object o returns boolean
+        return IsUnitAlly( o.unit, this.gamer.player )
+    endmethod
+
+    method isMagicImunne takes nothing returns boolean
+        return IsUnitType(this.unit, UNIT_TYPE_MAGIC_IMMUNE) 
+    endmethod
+
+    method isBuilding takes nothing returns boolean
+        return IsUnitType(this.unit, UNIT_TYPE_STRUCTURE)
+    endmethod
+
+    method isAncient takes nothing returns boolean
+        return IsUnitType(this.unit, UNIT_TYPE_ANCIENT)
+    endmethod
+
+    method isMechanical takes nothing returns boolean
+        return IsUnitType(this.unit, UNIT_TYPE_MECHANICAL)
+    endmethod 
+
+    method isHero takes nothing returns boolean
+        return IsUnitType( this.unit, UNIT_TYPE_HERO )
+    endmethod 
+
     // Works in v1.0.30.109 
     method addBonusAttack takes integer addAttack returns nothing
         local ability ab = GetUnitAbility( this.unit, 'AItk' )
@@ -127,6 +155,14 @@ struct object
         return GetUnitUserData( data ) - 1
     endmethod
 
+    static method filter takes nothing returns thistype
+        return GetUnitUserData( GetFilterUnit() ) - 1
+    endmethod
+
+    static method enum takes nothing returns thistype
+        return GetUnitUserData( GetEnumUnit() ) - 1
+    endmethod
+
     method silence takes nothing returns nothing
         call UnitApplySilence( this.unit, true )
     endmethod
@@ -150,3 +186,62 @@ endstruct
 function CreateObjectAtRect takes gamer gmr, integer typeID, rect rct, real face returns object
     return object.create( CreateUnit( gmr.player, typeID, GetRectCenterX(rct), GetRectCenterY(rct), face ) )
 endfunction
+
+function CreateObject takes gamer gmr, integer typeID, real x, real y, real face returns object
+    return object.create( CreateUnit( gmr.player, typeID, x, y, face ) )
+endfunction
+
+struct objectlist
+    group group = null
+    
+    method destroy takes nothing returns nothing
+        call DestroyGroup(this.group)
+        set this.group = null
+        call this.deallocate()
+    endmethod
+
+    method counts takes nothing returns integer
+        return GroupGetCount(this.group)
+    endmethod
+
+    method isEmpty takes nothing returns boolean
+        return GroupGetCount(this.group) == 0
+    endmethod
+
+    method firstObject takes nothing returns object
+        return object.getreal(FirstOfGroup(this.group))
+    endmethod
+
+    method getObjectByIndex takes integer index returns object
+        return object.getreal(GroupGetUnitByIndex(this.group, index))
+    endmethod
+
+    method addObject takes object obj returns nothing
+        call GroupAddUnit( this.group, obj.unit )
+    endmethod
+
+    method removeObject takes object obj returns nothing
+        call GroupRemoveUnit( this.group, obj.unit )
+    endmethod
+
+    method enum takes real x, real y, real r returns nothing
+        call GroupEnumUnitsInRange( this.group, x, y, r, null )
+    endmethod
+
+    method enumF takes real x, real y, real r, code ff returns nothing
+        local filterfunc f = Filter(ff)
+        call GroupEnumUnitsInRange( this.group, x, y, r, f )
+        call DestroyFilter(f)
+        set f = null
+    endmethod
+
+    method for takes code callback returns nothing
+        call ForGroup( this.group, callback )
+    endmethod
+
+    static method create takes nothing returns thistype
+        local thistype this = thistype.allocate()
+            set this.group = CreateGroup()
+        return this
+    endmethod
+endstruct
