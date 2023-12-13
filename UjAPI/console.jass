@@ -1,0 +1,75 @@
+globals
+     boolean            consoleEnabled  = false
+     string     array   consoleSysPerk
+endglobals
+
+function SetConsoleSettings takes nothing returns nothing
+    
+    // Console Colored Signs
+
+    set consoleSysPerk[ 0 ]     = "[  " + IntToChar(92) + "x1b[38;2;255;0;0mНЕТ" + IntToChar(92) + "x1b[m ]"
+    set consoleSysPerk[ 1 ]     = "[  " + IntToChar(92) + "x1b[38;2;0;255;0mДА" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 2 ]     = "[  " + IntToChar(92) + "x1b[38;2;153;0;0mОШИБКА" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 3 ]     = "[  " + IntToChar(92) + "x1b[38;2;255;255;0mЗАГРУЗКА" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 4 ]     = "[  " + IntToChar(92) + "x1b[38;2;0;153;0mГОТОВО" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 5 ]     = "[  " + IntToChar(92) + "x1b[38;2;153;138;0mОТМЕНА" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 6 ]     = "[  " + IntToChar(92) + "x1b[38;2;153;0;0mОТКЛОНЕНО" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 7 ]     = "[  " + IntToChar(92) + "x1b[38;2;0;255;255mНАЙДЕНО" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 8 ]     = "[  " + IntToChar(92) + "x1b[38;114;114;114mУТВЕРЖДЕНО" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 9 ]     = "[  " + IntToChar(92) + "x1b[38;2;0;255;0mПОБЕДА" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 10 ]    = "[  " + IntToChar(92) + "x1b[38;2;228;179;23mОБНАРУЖЕНО" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 11 ]    = "[  " + IntToChar(92) + "x1b[38;2;0;255;0mВПОРЯДКЕ" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 12 ]    = "[  " + IntToChar(92) + "x1b[38;2;0;0;255mОБРАБОТКА" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 13 ]    = "[  " + IntToChar(92) + "x1b[38;2;255;255;0mЧИСТО" + IntToChar(92) + "x1b[m  ]"
+    set consoleSysPerk[ 14 ]    = "[  " + IntToChar(92) + "x1b[38;2;0;153;0mПОЛУЧЕНО" + IntToChar(92) + "x1b[m  ]"
+
+    // Console Perk For Frame / Game Text Message
+
+    set consoleSysPerk[ 20 ]    = "[  |cffff0000НЕТ|r ]"
+    set consoleSysPerk[ 21 ]    = "[  |cff00ff00ДА|r  ]"
+    set consoleSysPerk[ 22 ]    = "[  |cff990000ОШИБКА|r  ]"
+    set consoleSysPerk[ 23 ]    = "[  |cffffff00ЗАГРУЗКА|r  ]"
+    set consoleSysPerk[ 24 ]    = "[  |cff009900ГОТОВО|r  ]"
+    set consoleSysPerk[ 25 ]    = "[  |cff998800ОТМЕНА|r  ]"
+    set consoleSysPerk[ 26 ]    = "[  |cff990000ОТКЛОНЕНО|r  ]"
+    set consoleSysPerk[ 27 ]    = "[  |cff00ffffНАЙДЕНО|r  ]"
+    set consoleSysPerk[ 28 ]    = "[  |cff727272УТВЕРЖДЕНО|r  ]"
+    set consoleSysPerk[ 29 ]    = "[  |cffe4b317ПОБЕДА|r  ]"
+    set consoleSysPerk[ 30 ]    = "[  |cfff08820ОБНАРУЖЕНО|r  ]"
+    set consoleSysPerk[ 31 ]    = "[  |cff00ff00ВПОРЯДКЕ|r  ]"
+    set consoleSysPerk[ 32 ]    = "[  |cff0000ffОБРАБОТКА|r  ]"
+    set consoleSysPerk[ 33 ]    = "[  |cffffff00ЧИСТО|r  ]"
+    set consoleSysPerk[ 34 ]    = "[  |cff009900ПОЛУЧЕНО|r  ]"
+
+endfunction
+
+struct console
+    frame   console = 0x0
+    boolean inChat  = false
+
+    method sysMessage takes integer smType, string msg returns nothing
+        if consoleEnabled then
+            call ConsolePrint( consoleSysPerk[smType] + " " + msg + "\n" )
+        endif 
+        if inChat then
+            call Debug( "<ОТЧЁТ>: " + consoleSysPerk[smType] + " " + msg )
+        endif
+    endmethod
+
+    method print takes string msg returns nothing
+        if consoleEnabled then
+            call ConsolePrint(msg+ "\n ")
+        endif 
+        if inChat then
+            call Debug( "<ОТЧЁТ>: "  + msg )
+        endif
+    endmethod
+
+    static method create takes nothing returns thistype
+        local thistype this = thistype.allocate()
+
+        set this.console = frame.create( "zConsole", this )
+
+        return this
+    endmethod
+endstruct

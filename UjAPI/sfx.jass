@@ -1,12 +1,12 @@
 struct sfx
     effect  effect  = null
 
-    gamer   owner   = $0
-    object  source  = $0
+    gamer   owner   = 0x0
+    object  source  = 0x0
 
     boolean autoDestroy = false
 
-    vrgba   rgba    = $0
+    vrgba   rgba    = 0x0
 
     method destroy takes nothing returns nothing
         if this.autoDestroy then
@@ -15,9 +15,9 @@ struct sfx
         endif
 
         set this.effect = null
-        set this.owner  = $0
+        set this.owner  = 0x0
 
-        set this.rgba   = $0
+        set this.rgba   = 0x0
         call this.deallocate()
     endmethod
 
@@ -66,7 +66,7 @@ struct sfx
     endmethod
 
     method xreloc takes vec3 v3 returns nothing
-        call SetSpecialEffectPositionEx( this.effect, v3.x, v3.y, v3.z )
+        call SetSpecialEffectPositionWithZ( this.effect, v3.x, v3.y, v3.z )
     endmethod
     
     method push takes thistype that returns nothing

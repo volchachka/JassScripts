@@ -1,0 +1,213 @@
+//IncludeFile "UI\FrameDef\UI\EscMenuTemplates.fdf", //подключаем файл
+
+    Texture "MyNormalTexture" {
+        File "ReplaceableTextures\CommandButtons\BTNSelectHeroOn.blp",
+    }
+
+    Texture "MyPushedTexture" {
+//0.008-0.0010 если размер MyPushedTexture меньше от реального 0.039x0.039, то получается эффект продавливания. Только учтите, если триггерно задать размер кнопки MySimpleButton, то будет очень сильное продавливаться, что не очень хорошо. Триггерно размеры MyPushedTexture изменить нельзя
+        Width 0.038,
+        Height 0.038,
+        File "ReplaceableTextures\CommandButtons\BTNSelectHeroOn.blp",
+    }
+
+    Texture "MyDisabledTexture" {
+        File "ReplaceableTextures\CommandButtonsDisabled\DISBTNSelectHeroOn.blp",
+    }
+
+    Texture "MyButtonHighlight" {
+        File "UI\Widgets\EscMenu\Orc\orc-options-button-highlight.blp",
+        AlphaMode "ADD",
+        //File "UI\Glues\ScoreScreen\scorescreen-tab-hilight.blp",
+        //AlphaMode "ADD",
+    }
+
+Frame "SIMPLEBUTTON" "MySimpleButton" {
+    Width 0.039,
+    Height 0.039,
+    //ButtonPushedTextOffset 0.001 -0.001, //<- эта строчка для текста, а не для иконок
+    NormalTexture "MyNormalTexture",
+    PushedTexture "MyPushedTexture",
+    DisabledTexture "MyDisabledTexture",
+    UseHighlight "MyButtonHighlight",
+}
+
+// ListerButton Panel
+
+Frame "CHECKBOX" "ListerButton"  {
+        Width  0.080,
+        Height 0.024,
+        
+        ControlBackdrop "CommonCheckBoxBackdrop",
+        Frame "BACKDROP" "CommonCheckBoxBackdrop" {
+            BackdropBlendAll,
+            BackdropBackground  "UI\Widgets\EscMenu\Human\Checkbox-Background.blp",
+        }
+
+        ControlPushedBackdrop "CommonCheckBoxPushedBackdrop",
+        Frame "BACKDROP" "CommonCheckBoxPushedBackdrop" {
+            BackdropBlendAll,
+            BackdropBackground  "UI\Widgets\EscMenu\Human\Checkbox-Depressed.blp",
+        }
+
+        ControlDisabledBackdrop "CommonCheckBoxDisabledBackdrop",
+        Frame "BACKDROP" "CommonCheckBoxDisabledBackdrop" {
+            BackdropBlendAll,
+            BackdropBackground  "UI\Widgets\EscMenu\Human\Checkbox-Background-Disabled.blp",
+        }
+        
+        
+        CheckBoxCheckHighlight "CommonCheckHighlightTemplate",
+        Frame "HIGHLIGHT" "CommonCheckHighlightTemplate" {
+            HighlightType "FILETEXTURE",
+            HighlightAlphaFile "UI\Widgets\EscMenu\Human\blank-background.blp",    
+            HighlightAlphaMode "BLEND",
+        }
+
+        CheckBoxDisabledCheckHighlight "CommonDisabledCheckHighlightTemplate",
+        Frame "HIGHLIGHT" "CommonDisabledCheckHighlightTemplate" {
+            HighlightType "FILETEXTURE",
+            HighlightAlphaFile "UI\Widgets\EscMenu\Human\blank-background.blp",    
+            HighlightAlphaMode "BLEND",
+        }
+}
+
+Frame "FRAME" "ListerButtonInfo" {
+    Width  0.080,
+    Height 0.024,
+    
+    Frame "CHECKBOX" "ListerButtonInfoBox" INHERITS WITHCHILDREN "ListerButton" {
+        Width  0.080,
+        Height 0.024,
+        SetPoint CENTER, "ListerButtonInfo", CENTER, 0.0, 0.0,
+    }
+    
+    Frame "BACKDROP" "ListerButtonInfoPanel" {
+            Width  0.080,
+            Height 0.024,
+            //DecorateFileNames,
+            BackdropBackground  "UI\Widgets\Glues\GlueScreen-Checkbox-Check.blp",
+            BackdropBlendAll,
+            SetPoint CENTER, "ListerButtonInfoBox", CENTER, 0.0, 0.0,
+    }
+    
+    Frame "TEXT" "ListerButtonInfoPanelText" {
+        SetPoint CENTER, "ListerButtonInfoPanel", CENTER, 0.0, 0.0,
+        Text "TabPage",
+        FontColor 1.0 1.0 1.0 1.0,
+        Width  0.080,
+        Height 0.024,
+        FontJustificationH JUSTIFYCENTER,
+        }
+    }
+    
+
+
+//IncludeFile "UI\FrameDef\UI\EscMenuTemplates.fdf", //подключаем файл
+
+    Texture "NV2NormalTexture" {
+        File "nv2\nv2_plrnum.tga",
+    }
+    
+    Texture "NV2PushedTexture" {
+//0.008-0.0010 если размер NV2PushedTexture меньше от реального 0.039x0.039, то получается эффект продавливания. Только учтите, если триггерно задать размер кнопки NV2SimpleButton, то будет очень сильное продавливаться, что не очень хорошо. Триггерно размеры NV2PushedTexture изменить нельзя
+        Width 0.029,
+        Height 0.019,
+        File "nv2\nv2_sparta3.tga",
+    }
+
+    Texture "NV2DisabledTexture" {
+        File "nv2\nv2_plrnum.tga",
+    }
+
+    Texture "NV2ButtonHighlight" {
+        File "UI\Widgets\EscMenu\Orc\orc-options-button-highlight.blp",
+        AlphaMode "ADD",
+        //File "UI\Glues\ScoreScreen\scorescreen-tab-hilight.blp",
+        //AlphaMode "ADD",
+    }
+
+Frame "SIMPLEBUTTON" "NV2SimpleButton" {
+    Width 0.030,
+    Height 0.020,
+    //Text "TabPage",
+    //ButtonPushedTextOffset 0.001 -0.001, //<- эта строчка для текста, а не для иконок
+    NormalTexture "NV2NormalTexture",
+    PushedTexture "NV2PushedTexture",
+    DisabledTexture "NV2DisabledTexture",
+    UseHighlight "NV2ButtonHighlight",
+}
+
+
+// GLUE PUSHED
+
+
+Frame "TEXT" "CMDBoxTextTemplate" {
+    DecorateFileNames,
+    FrameFont "MasterFont", 0.010, "",
+    FontJustificationH JUSTIFYCENTER,
+    FontJustificationV JUSTIFYMIDDLE,
+    FontFlags "FIXEDSIZE",
+    FontColor 1.0 1.0 1.0 1.0,
+    //FontHighlightColor 1.0 1.0 1.0 1.0,
+    //FontDisabledColor 0.5 0.5 0.5 1.0,
+    FontShadowColor 0.0 0.0 0.0 0.9,
+    FontShadowOffset 0.001 -0.001,
+}
+
+Frame "GLUETEXTBUTTON" "CommandButtonTemplate" {
+    ControlStyle "AUTOTRACK",
+    ButtonPushedTextOffset 0.001f -0.001f,
+    
+    ControlBackdrop "CommandButtonBackdrop",
+    Frame "BACKDROP" "CommandButtonBackdrop" {
+        DecorateFileNames,
+        BackdropTileBackground,
+        BackdropBackground  "EscMenuButtonBackground",
+        BackdropCornerFlags "UL|UR|BL|BR|T|L|B|R",
+        BackdropCornerSize  0.0125,
+        BackdropBackgroundSize  0.256,
+        BackdropEdgeFile  "UI\Widgets\Console\Human\human-console-button-up.blp",
+    }
+    
+    ControlPushedBackdrop "CommandButtonPushedBackdrop",
+    Frame "BACKDROP" "CommandButtonPushedBackdrop" {
+        DecorateFileNames,
+        BackdropTileBackground,
+        BackdropBackground  "EscMenuButtonPushedBackground",
+        BackdropCornerFlags "UL|UR|BL|BR|T|L|B|R",
+        BackdropCornerSize  0.0125,
+        BackdropBackgroundSize  0.256,
+        BackdropBackgroundInsets 0.0015 0.0015 0.0015 0.0015,
+        BackdropEdgeFile  "UI\Widgets\Console\Human\human-console-button-down.blp",
+    }
+
+    ControlDisabledBackdrop "CommandButtonDisabledBackdrop",
+    Frame "BACKDROP" "CommandButtonDisabledBackdrop" {
+        DecorateFileNames,
+        BackdropTileBackground,
+        BackdropBackground  "EscMenuButtonDisabledBackground",
+        BackdropCornerFlags "UL|UR|BL|BR|T|L|B|R",
+        BackdropCornerSize  0.0125,
+        BackdropBackgroundSize  0.256,
+        BackdropBackgroundInsets 0.001 0.001 0.001 0.001,
+        BackdropEdgeFile  "UI\Widgets\Console\Human\human-console-button-up.blp",
+    }
+
+    ControlDisabledPushedBackdrop "CommandButtonDisabledPushedBackdrop",
+    Frame "BACKDROP" "CommandButtonDisabledPushedBackdrop" {
+        DecorateFileNames,
+        BackdropTileBackground,
+        BackdropBackground  "EscMenuButtonDisabledPushedBackground",
+        BackdropCornerFlags "UL|UR|BL|BR|T|L|B|R",
+        BackdropCornerSize  0.0125,
+        BackdropBackgroundSize  0.256,
+        BackdropBackgroundInsets 0.002 0.002 0.002 0.002,
+        BackdropEdgeFile  "UI\Widgets\Console\Human\human-console-button-down.blp",
+    }
+    
+    // Текст привязываем к кнопке
+    ButtonText "CMDBoxText",
+    Frame "TEXT" "CMDBoxText" INHERITS "CMDBoxTextTemplate" {
+    }
+}

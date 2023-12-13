@@ -1,0 +1,54 @@
+// -- LOCAL TEMPLATES -------------------------------------------------------
+// Z == 2, this some kind a number is two)
+
+Frame "BACKDROP" "BoxedTextBackgroundTemplateZ" {
+        DecorateFileNames, //Look-Up Names in some String table (for example gameinterface)
+        BackdropTileBackground, //Tile mode enabled
+        BackdropBackground  "ToolTipBackground", //BackgroundFile
+        BackdropCornerFlags "UL|UR|BL|BR|T|L|B|R",
+        BackdropCornerSize  0.008, //higher numbers make the corners bigger.
+        BackdropBackgroundInsets 0.0022 0.0022 0.0022 0.0022, //makes the background smaller, from the outside.
+        BackdropEdgeFile  "ToolTipBorder", //the border File
+        //AlphaMode "BLEND",
+        //Alpha 0.75,
+        BackdropBlendAll,
+}
+// -- Frames -------------------------------------------------------
+Frame "BACKDROP" "BoxedTextZ" INHERITS "BoxedTextBackgroundTemplateZ" {
+   UseActiveContext,
+ 
+   Frame "TEXT" "BoxedTextTitleZ" {
+       UseActiveContext,
+       DecorateFileNames,
+       SetPoint TOPLEFT, "BoxedTextZ", TOPLEFT, 0.005, -0.005, //Positionate "BoxedTextSimpleTitle"'s TOPLEFT to "BoxedText"'s TOPLEFT with an offset
+       SetPoint TOPRIGHT, "BoxedTextZ", TOPRIGHT, -0.005, -0.005,
+       FontFlags "FIXEDSIZE",
+       FrameFont "MasterFont", 0.012, "",
+       FontColor 1.0 1.0 1.0 1.0, //Red Green Blue Alpha 0.0 to 1.0
+       FontShadowColor 0.0 0.0 0.0 0.9,
+       FontShadowOffset 0.001 -0.001,
+   }
+    
+   Frame "BACKDROP" "BoxedTextDividerZ" {
+        UseActiveContext,
+        DecorateFileNames, //Look-Up Names in some String table (for example gameinterface)
+        BackdropTileBackground, //Tile mode enabled
+        BackdropBackground  "grey.dds",
+        SetPoint TOPLEFT, "BoxedTextZ", TOPLEFT, 0.005, -0.021, //Positionate "BoxedTextSimpleTitle"'s TOPLEFT to "BoxedText"'s TOPLEFT with an offset
+        SetPoint TOPRIGHT, "BoxedTextZ", TOPRIGHT, -0.005, -0.021,
+        Height 0.001,
+        
+   }
+
+   Frame "TEXT" "BoxedTextValueZ" {
+       UseActiveContext,
+       DecorateFileNames,
+       SetPoint TOPLEFT, "BoxedTextZ", TOPLEFT, 0.005, -0.024,
+       SetPoint BOTTOMRIGHT,  "BoxedTextZ", BOTTOMRIGHT, -0.005, 0.005,
+       FontFlags "FIXEDSIZE",
+       FrameFont "MasterFont", 0.010, "",
+       FontColor 1.0 1.0 1.0 1.0,
+       FontShadowColor 0.0 0.0 0.0 0.9,
+       FontShadowOffset 0.001 -0.001,
+   }
+}

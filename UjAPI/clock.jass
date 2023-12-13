@@ -116,7 +116,7 @@ struct clock
     method except takes nothing returns nothing
         call HandleListDestroy( this.trcList )
         set this.trcList    = null
-        set this.processes  = $0
+        set this.processes  = 0x0
     endmethod
 
     
@@ -133,8 +133,8 @@ struct clock
         local handlelist    new_trcList     = HandleListCreate()
         local integer       trcListCount    = HandleListGetCount(this.trcList)
         local timer         timerData       =   null
-        local clock         watch           = $0
-        local integer       x               = $0
+        local clock         watch           = 0x0
+        local integer       x               = 0x0
         
         loop
             set timerData =  HandleToTimer( HandleListGetHandleByIndex( this.trcList, x ) )

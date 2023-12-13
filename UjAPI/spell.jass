@@ -19,7 +19,7 @@ struct spell
         return xClock.load(-8)
     endmethod
     
-    static method getreal takes nothing returns thistype
+    static method get takes nothing returns thistype
         return clock.expired().load(-8)
     endmethod
     

@@ -16,5 +16,10 @@
 //! import "JassScripts/UjAPI/gamer.jass"
 //! import "JassScripts/UjAPI/spell.jass"
 //! import "JassScripts/UjAPI/game.jass"
+//! import "JassScripts/UjAPI/frames.jass"
+//! import "JassScripts/UjAPI/tacticpoint.jass"
+//! import "JassScripts/UjAPI/console.jass"
+//! import "JassScripts/UjAPI/vision.jass"
 
 //! import "ujMain.jass"
+//! import "JassScripts/UjAPI/loader.jass"

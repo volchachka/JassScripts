@@ -92,35 +92,35 @@ struct object
         return IsUnitType( this.unit, UNIT_TYPE_HERO )
     endmethod 
 
-    // Works in v1.0.30.109 
+    // Правильно действует с версии v1.0.30.109 
     method addBonusAttack takes integer addAttack returns nothing
         local ability ab = GetUnitAbility( this.unit, 'AItk' )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0) + addAttack )
         set ab = null
     endmethod
 
-    // Works since v1.0.30.109 
+    // Правильно действует с версии v1.0.30.109 
     method addBonusArmor takes integer addArmor returns nothing
         local ability ab = GetUnitAbility( this.unit, 'AId0' )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_DEFENSE_BONUS_IDEF, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_DEFENSE_BONUS_IDEF, 0 ) + addArmor )
         set ab = null
     endmethod
 
-    // Works since v1.0.30.109 
+    // Правильно действует с версии v1.0.30.109  
     method addBonusStr takes integer addStr returns nothing
         local ability ab = GetUnitAbility( this.unit, 'Aamk' )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_STRENGTH_BONUS_ISTR, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_STRENGTH_BONUS_ISTR, 0 ) + addStr )
         set ab = null
     endmethod
 
-    // Works since v1.0.30.109 
+    // Правильно действует с версии v1.0.30.109 
     method addBonusAgi takes integer addAgi returns nothing
         local ability ab = GetUnitAbility( this.unit, 'Aamk' )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_AGILITY_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_AGILITY_BONUS, 0 ) + addAgi )
         set ab = null
     endmethod
 
-    // Works since v1.0.30.109 
+    // Правильно действует с версии v1.0.30.109 
     method addBonusInt takes integer addInt returns nothing
         local ability ab = GetUnitAbility( this.unit, 'Aamk' )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_INTELLIGENCE_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_INTELLIGENCE_BONUS, 0 ) + addInt )
@@ -151,7 +151,7 @@ struct object
         call SetUnitInvulnerable( this.unit, isInvulnerable )
     endmethod
     
-    static method getreal takes unit data returns thistype
+    static method get takes unit data returns thistype
         return GetUnitUserData( data ) - 1
     endmethod
 
@@ -171,10 +171,22 @@ struct object
         call UnitApplySilence( this.unit, false )
     endmethod
     
+    // Предупреждение!
+    // Только для одиночной игры 
+    method share takes gamer gmr returns nothing
+        call SetUnitVisibleByPlayer( this.unit, gmr.player, true )
+    endmethod
+
+    // Предупреждение!
+    // Только для одиночной игры 
+    method unshare takes gamer gmr returns nothing
+        call SetUnitVisibleByPlayer( this.unit, gmr.player, false )
+    endmethod
+
     static method create takes unit wUnit returns thistype
         local thistype this = thistype.allocate()
             set this.unit = wUnit
-            set this.gamer = gamer.getrealOf(wUnit)
+            set this.gamer = gamer.getOf(wUnit)
 
             set this.handleID   = GetHandleId( this.unit )
             set this.typeID     = GetUnitTypeId( this.unit )
@@ -209,11 +221,11 @@ struct objectlist
     endmethod
 
     method firstObject takes nothing returns object
-        return object.getreal(FirstOfGroup(this.group))
+        return object.get(FirstOfGroup(this.group))
     endmethod
 
     method getObjectByIndex takes integer index returns object
-        return object.getreal(GroupGetUnitByIndex(this.group, index))
+        return object.get(GroupGetUnitByIndex(this.group, index))
     endmethod
 
     method addObject takes object obj returns nothing

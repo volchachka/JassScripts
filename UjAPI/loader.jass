@@ -1,0 +1,12 @@
+scope Loader initializer loader
+
+    function loader takes nothing returns nothing
+        call frame.initialize()
+        call tacticpoint.init()
+
+        call TOCs()
+        call SetConsoleSettings()
+        call GameStart()
+    endfunction
+endscope
+

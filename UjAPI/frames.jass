@@ -1,0 +1,182 @@
+struct frame
+            framehandle frame   = null
+            integer     index   = 0x0
+    static  framehandle ui      = null
+    static  framehandle console = null
+
+    static method initialize takes nothing returns nothing
+        local thistype this = 0x0
+        set this.ui         = GetOriginFrame( ORIGIN_FRAME_GAME_UI, 0 )
+        set this.console    = GetOriginFrame( ORIGIN_FRAME_CONSOLE_UI, 0 )
+    endmethod
+
+    method destroy takes nothing returns nothing
+        call FlushChildHashtable( Volchachka, GetHandleId(this.frame) )
+        call DestroyFrame( this.frame )
+        set this.frame = null
+        call this.deallocate()    
+    endmethod
+    
+    method release takes nothing returns nothing
+        call FlushChildHashtable( Volchachka, GetHandleId(this.frame) )
+        set this.frame = null
+        call this.deallocate()    
+    endmethod
+
+    method size takes real w, real h  returns thistype
+       call SetFrameSize( this.frame, w, h )
+       return this
+    endmethod
+    
+    method alpha takes integer amount returns thistype
+        call SetFrameAlpha( this.frame, amount )
+        return this
+     endmethod
+
+    method setPointsConsole takes framepointtype fPoint, framepointtype frPoint, real x, real y returns thistype
+        call SetFrameRelativePoint( this.frame, fPoint, thistype.console, frPoint, x, y )
+        return this
+    endmethod
+
+    method setPointsUI takes framepointtype fPoint, framepointtype frPoint, real x, real y returns thistype
+        call SetFrameRelativePoint( this.frame, fPoint, thistype.ui, frPoint, x, y )
+        return this
+    endmethod
+
+    method setPoints takes framepointtype fPoint, frame relFrame, framepointtype frPoint, real x, real y returns thistype
+        call SetFrameRelativePoint( this.frame, fPoint, relFrame.frame, frPoint, x, y )
+        return this
+    endmethod
+
+    method setAllPoints takes frame that returns thistype
+        call SetFrameAllPoints( this.frame, that.frame )
+        return this
+    endmethod
+
+    method setAbsPoints takes framepointtype fp, real x, real y returns thistype
+        call SetFrameAbsolutePoint( this.frame, fp, x, y)
+        return this
+    endmethod
+
+    method clearAllPoints takes nothing returns thistype
+        call ClearFrameAllPoints( this.frame )
+        return this
+    endmethod
+
+    method texture takes string texFile returns thistype
+        call SetFrameTexture( this.frame, texFile, 0, false )
+        return this
+    endmethod
+
+    method isVisible takes nothing returns boolean
+        return IsFrameVisible( this.frame )
+    endmethod
+    
+    method visible takes boolean isVisible returns thistype
+        call ShowFrame( this.frame, isVisible )
+        return this
+    endmethod
+
+    method text takes string textString returns thistype
+        call SetFrameText( this.frame, textString )
+        return this
+    endmethod
+
+    method color takes integer r, integer g, integer b, integer a returns thistype
+        call SetFrameColour( this.frame, ConvertColour( a, r, g, b ))
+        return this
+    endmethod
+
+    method colour takes vrgba vcl returns thistype
+        call SetFrameColour( this.frame, ConvertColour( vcl.alpha, vcl.red, vcl.green, vcl.blue ) )
+        return this
+    endmethod
+
+    method textColor takes integer r, integer g, integer b, integer a returns thistype
+        call SetFrameTextColour( this.frame, ConvertColour( a, r, g, b ))
+        return this
+    endmethod
+
+    method textcolour takes vrgba vcl returns thistype
+        call SetFrameTextColour( this.frame, ConvertColour( vcl.alpha, vcl.red, vcl.green, vcl.blue ) )
+        return this
+    endmethod
+
+    static method createZ takes string frameName, string frameType, frame that, string frameInherit, integer index returns thistype
+        local thistype this = thistype.allocate()
+        
+        set this.frame = CreateFrameByType( frameType, frameName, that.frame, frameInherit, index )
+        set this.index = index
+        call SaveInteger( Volchachka, GetHandleId(this.frame), 0, this + 1 )
+
+        return this
+    endmethod
+
+    static method createV takes string frameName, string frameType, frame that, integer index returns thistype
+        local thistype this = thistype.allocate()
+        
+        set this.frame = CreateFrameByType( frameType, frameName, that.frame, "", index )
+        set this.index = index
+        call SaveInteger( Volchachka, GetHandleId(this.frame), 0, this + 1 )
+
+        return this
+    endmethod
+
+    static method createExtra takes string frameName, string frameType, string frameInherit, integer index returns thistype
+        local thistype this = thistype.allocate()
+        
+        set this.frame = CreateFrameByType( frameType, frameName, thistype.ui, frameInherit, index )
+        set this.index = index
+        call SaveInteger( Volchachka, GetHandleId(this.frame), 0, this + 1 )
+
+        return this
+    endmethod
+
+    static method createEx takes string frameName, string frameType, integer index returns thistype
+        local thistype this = thistype.allocate()
+        
+        set this.frame = CreateFrameByType( frameType, frameName, thistype.ui, "", index )
+        set this.index = index
+        call SaveInteger( Volchachka, GetHandleId(this.frame), 0, this + 1 )
+
+        return this
+    endmethod
+    
+    static method getOf takes string frameName, integer index returns thistype
+        local thistype this = thistype.allocate()
+
+        set this.frame = GetFrameByName( frameName, index )
+        set this.index = index
+        call SaveInteger( Volchachka, GetHandleId(this.frame), 0, this + 1 )
+
+        return this
+    endmethod
+
+    static method get takes nothing returns thistype
+        return LoadInteger( Volchachka, GetHandleId( GetTriggerFrame()), 0 ) -1         
+    endmethod
+
+    static method createF takes string frameName, frame that, integer index returns thistype
+        local thistype this = thistype.allocate()
+
+        set this.frame = CreateFrame( frameName, that.frame, 0, index )
+        set this.index = index
+        call SaveInteger( Volchachka, GetHandleId(this.frame), 0, this + 1 )
+
+        return this
+    endmethod
+
+    static method create takes string frameName, integer index returns thistype
+        local thistype this = thistype.allocate()
+
+        set this.frame = CreateFrame( frameName, thistype.ui, 0, index )
+        set this.index = index
+        call SaveInteger( Volchachka, GetHandleId(this.frame), 0, this + 1 )
+
+        return this
+    endmethod
+endstruct
+
+function TOCs takes nothing returns nothing
+    call LoadTOCFile("UjAPI\\Frames\\zbs.toc")
+endfunction

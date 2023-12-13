@@ -1,29 +1,44 @@
 struct tacticpoint
-    region  point   = null
-    integer funcler = $0
+    static  game        regions     = 0x0
+    static  game        regionsL    = 0x0
+
+            region      point       = null
+
+            integer     funcler     = 0x0
+            integer     funclerL    = 0x0
 
     method setExecFunc takes code c returns nothing
         set this.funcler = C2I(c)
     endmethod
 
+    method setExecFuncL takes code c returns nothing
+        set this.funclerL = C2I(c)
+    endmethod
+
     method exec takes nothing returns nothing
-        if funcler > $0 then
+        if funcler > 0x0 then
             call ExecuteCode( I2C(this.funcler) )
         endif
     endmethod
-
-    method getreal takes nothing returns thistype
-        return LoadInteger( Volchachka, GetHandleId(GetTriggeringRegion()), 0 )
+    
+    method execL takes nothing returns nothing
+        if funclerL > 0x0 then
+            call ExecuteCode( I2C(this.funclerL ) )
+        endif
     endmethod
 
-    method of takes region point returns thistype
-        return LoadInteger( Volchachka, GetHandleId(point), 0 )
+    static method get takes nothing returns thistype
+        return LoadInteger( Volchachka, GetHandleId(GetTriggeringRegion()), 0 ) - 1
+    endmethod
+
+    static method of takes region point returns thistype
+        return LoadInteger( Volchachka, GetHandleId(point), 0 ) - 1
     endmethod
 
     method release takes nothing returns nothing
         call RemoveRegion(this.point)
         set this.point   = null
-        set this.funcler = $0
+        set this.funcler = 0x0
         call this.deallocate()
     endmethod
 
@@ -43,34 +58,68 @@ struct tacticpoint
     endmethod
 
     static method cell takes real x, real y returns thistype
-        local thistype this = this.allocate()
+        local thistype this = thistype.allocate()
             set this.point = CreateRegion()
             call RegionAddCell( this.point, x, y )
-            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this )
+            call SaveInteger( Volchachka, GetHandleId(this.point), 0,  this + 1)
         return this
     endmethod
 
     static method location takes location loc returns thistype
-        local thistype this = this.allocate()
+        local thistype this = thistype.allocate()
             set this.point = CreateRegion()
             call RegionAddCellAtLoc( this.point, loc )
-            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this )
+            call SaveInteger( Volchachka, GetHandleId(this.point), 0,  this + 1)
         return this
     endmethod
 
     static method rect takes rect rct returns thistype
-        local thistype this = this.allocate()
+        local thistype this = thistype.allocate()
             set this.point = CreateRegion()
             call RegionAddRect( this.point, rct )
-            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this )
+            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this + 1 )
         return this
     endmethod
 
     static method tacticpoint takes nothing returns thistype
-        local thistype this = this.allocate()
-            set this.point = CreateRegion()
-            call SaveInteger( Volchachka, GetHandleId(this.point), 0, this )
+        local thistype this = thistype.allocate()
+
+            set     this.point                  = CreateRegion( )
+            call    thistype.regions.enterPoint ( this )
+
+            call    SaveInteger( Volchachka, GetHandleId( this.point ), 0,  this + 1 )
         return this
     endmethod
 
+    static method tacticpointEx takes nothing returns thistype
+        local thistype this = thistype.allocate()
+            set this.point = CreateRegion()
+            call SaveInteger( Volchachka, GetHandleId(this.point), 0,  this + 1 )
+        return this
+    endmethod
+
+    static method actions takes nothing returns nothing
+        local thistype  this        = thistype.get()
+        local game      regionsZ    = game.get()
+
+        if this >= 0 then
+        
+            if regionsZ == thistype.regions then
+                call this.exec()
+            elseif regionsZ == thistype.regionsL then
+                call this.execL()
+            endif
+
+        endif
+
+        return
+    endmethod
+
+    static method init takes nothing returns nothing
+        local thistype this = 0x0
+        set     this.regions            =   game.create()
+        call    thistype.regions.action ( function thistype.actions )
+        set     this.regionsL           = game.create()
+        call    thistype.regionsL.action ( function thistype.actions )
+    endmethod
 endstruct

@@ -2,14 +2,15 @@
 // ujMain.jass template Main)
 
 function GameStartPost takes nothing returns nothing
-    local   game    gamestart   = game.getreal()
-    
+    local   game    gamestart   = game.get()
+
+        call ExecuteFunc( "Map" )
         //>> Your code << //    
     
     call    gamestart.destroy()
 endfunction
 
-function GameStart takes code gameStartPost returns nothing
+function GameStart takes nothing returns nothing
     local integer index = 0x0
     local game gamestart = game.create()
     
@@ -26,7 +27,7 @@ function GameStart takes code gameStartPost returns nothing
         exitwhen index == bj_MAX_PLAYERS
     endloop
 
-    call gamestart.action   ( gameStartPost )
+    call gamestart.action   ( function GameStartPost )
     call gamestart.lag      ( 2.5 )
 
 endfunction

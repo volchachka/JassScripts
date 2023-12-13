@@ -7,13 +7,24 @@ struct vrgba
 
     string  hex     = "FFFFFF"
 
-    method toHex takes nothing returns nothing
+    method toHex takes nothing returns thistype
         set this.hex = HexZero( IntToHex(this.alpha), 2 )
         set this.hex = this.hex + HexZero( IntToHex(this.red), 2 )
         set this.hex = this.hex + HexZero( IntToHex(this.blue), 2 )
         set this.hex = this.hex + HexZero( IntToHex(this.green), 2 )
+
+        return this
     endmethod
     
+    static method createEx takes integer r, integer g, integer b, integer a returns thistype
+        local thistype this = thistype.allocate()
+            set this.red = r
+            set this.green = g
+            set this.blue = b
+            set this.alpha = a
+        return this
+    endmethod
+
     static method create takes nothing returns thistype
         local thistype this = thistype.allocate()
             set this.red = 255

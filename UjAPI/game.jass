@@ -46,6 +46,10 @@ struct game
                 call this.deallocate()
             endmethod
             
+            static method get takes nothing returns thistype
+                return LoadInteger( UjAPI, GetHandleId( GetTriggeringTrigger() ), 0 ) - 1
+            endmethod
+
             method lag takes real timeout returns nothing
                 call TriggerRegisterTimerEvent( this.trigger, timeout, false )
             endmethod
@@ -60,10 +64,6 @@ struct game
             
             method enable takes nothing returns nothing
                 call EnableTrigger(  this.trigger )
-            endmethod
-            
-            static method getreal takes nothing returns thistype
-                return LoadInteger( UjAPI, GetHandleId(GetTriggeringTrigger()), 0 ) - 1
             endmethod
             
             method action takes code handlerFunc returns nothing
@@ -109,6 +109,10 @@ struct game
                 call TriggerRegisterLeaveRegion( this.trigger, tp.point, null )
             endmethod
 
+            method frameClick takes frame wFrame returns nothing
+                call TriggerRegisterFrameEvent( this.trigger, wFrame.frame, FRAMEEVENT_CONTROL_CLICK )    
+            endmethod
+
             method leavePointEx takes tacticpoint tp, code handlerFunc returns nothing
                 if this.filterfunc == null then
                     set this.filterfunc = Filter(handlerFunc)
@@ -122,4 +126,6 @@ struct game
                     call SaveInteger( UjAPI, GetHandleId(this.trigger), 0, this + 1 )
                 return this
             endmethod
+
+
 endstruct

@@ -36,14 +36,68 @@ struct gamer
         return GetPlayerState( this.player, PLAYER_STATE_RESOURCE_LUMBER )
     endmethod
     
-    static method getreal takes nothing returns thistype
+    static method get takes nothing returns thistype
         return game.gamers[ GetPlayerId( GetTriggerPlayer() ) ]
     endmethod
     
-    static method getrealOf takes unit ownerUnit returns thistype
+    static method getOf takes unit ownerUnit returns thistype
         return game.gamers[ GetPlayerId( GetOwningPlayer(ownerUnit) )]
     endmethod
     
+    method getName takes nothing returns string
+        return GetPlayerName( this.player )
+    endmethod
+
+    method name takes string plrName returns nothing
+        call SetPlayerName( this.player, plrName )
+    endmethod
+
+    method pact takes gamer gmr, alliancetype alType returns nothing
+        call SetPlayerAlliance( this.palyer, gmr.player, alType, true )
+    endmethod
+
+    method ally takes gamer gmr returns nothing
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_PASSIVE, true )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_HELP_REQUEST, true )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_HELP_RESPONSE, true )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_VISION, true )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_VISION_FORCED, true )
+
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_CONTROL, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_SPELLS, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_ADVANCED_CONTROL, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_XP, true )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_RESCUABLE, false )
+    endmethod
+    
+    method passive takes gamer gmr returns nothing
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_PASSIVE, true )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_HELP_REQUEST, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_HELP_RESPONSE, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_VISION, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_VISION_FORCED, false )
+
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_CONTROL, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_SPELLS, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_ADVANCED_CONTROL, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_XP, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_RESCUABLE, false )
+    endmethod
+
+    method enemy takes gamer gmr returns nothing
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_PASSIVE, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_HELP_REQUEST, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_HELP_RESPONSE, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_VISION, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_VISION_FORCED, false )
+
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_CONTROL, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_SPELLS, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_ADVANCED_CONTROL, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_SHARED_XP, false )
+        call SetPlayerAlliance( this.palyer, gmr.player, ALLIANCE_RESCUABLE, false )
+    endmethod
+
     static method create takes integer index returns thistype
         local thistype this = thistype.allocate()
             set this.player = Player(index)

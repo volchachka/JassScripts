@@ -1,0 +1,34 @@
+struct vision 
+
+    fogmodifier fog = null
+
+    method destroy takes nothing returns nothing
+        call DestroyFogModifier(this.fog)
+        set this.fog = null
+        call this.deallocate()
+    endmethod
+
+    method enable takes nothing returns nothing
+        call FogModifierStart( this.fog )
+    endmethod
+
+    method disable takes nothing returns nothing
+        call FogModifierStop this.fog )
+    endmethod
+
+    static method createex takes real locationX, locationY, real radius, gamer whichGamer returns thistype
+        local thistype this = thistype.allocate()
+            
+            set this.fog = CreateFogModifierRadius( whichGamer.player, FOG_OF_WAR_VISIBLE, locationX, locationY, radius, true, false )
+
+        return this
+    endmethod
+
+    static method create takes rect whichRect, gamer whichGamer returns thistype
+        local thistype this = thistype.allocate()
+            
+            set this.fog = CreateFogModifierRect( whichGamer.player, FOG_OF_WAR_VISIBLE, whichRect, true, false )
+
+        return this
+    endmethod
+endstruct
