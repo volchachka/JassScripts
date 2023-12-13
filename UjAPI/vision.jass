@@ -13,10 +13,10 @@ struct vision
     endmethod
 
     method disable takes nothing returns nothing
-        call FogModifierStop this.fog )
+        call FogModifierStop( this.fog )
     endmethod
 
-    static method createex takes real locationX, locationY, real radius, gamer whichGamer returns thistype
+    static method createex takes real locationX, real locationY, real radius, gamer whichGamer returns thistype
         local thistype this = thistype.allocate()
             
             set this.fog = CreateFogModifierRadius( whichGamer.player, FOG_OF_WAR_VISIBLE, locationX, locationY, radius, true, false )
