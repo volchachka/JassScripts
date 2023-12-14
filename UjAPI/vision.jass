@@ -8,12 +8,14 @@ struct vision
         call this.deallocate()
     endmethod
 
-    method enable takes nothing returns nothing
+    method enable takes nothing returns thistype
         call FogModifierStart( this.fog )
+        return this
     endmethod
 
-    method disable takes nothing returns nothing
+    method disable takes nothing returns thistype
         call FogModifierStop( this.fog )
+        return this
     endmethod
 
     static method createex takes real locationX, real locationY, real radius, gamer whichGamer returns thistype

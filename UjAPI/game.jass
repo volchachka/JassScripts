@@ -120,12 +120,19 @@ struct game
                 call TriggerRegisterLeaveRegion( this.trigger, tp.point, this.filterfunc )
             endmethod
 
+            static method shutdown takes nothing returns nothing
+                call EndGame(false)
+            endmethod
+
+            static method reboot takes nothing returns nothing
+                call RestartGame(false)
+            endmethod
+
             static method create takes nothing returns thistype
                 local thistype this = thistype.allocate()
                     set this.trigger = CreateTrigger()
                     call SaveInteger( UjAPI, GetHandleId(this.trigger), 0, this + 1 )
                 return this
             endmethod
-
 
 endstruct

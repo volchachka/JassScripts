@@ -48,6 +48,72 @@ function HexZero takes string hex, integer zeroCount returns string
     return hex
 endfunction
 
+struct kernel
+    static thistype kernel      = 0x0
+    static thistype kernmx      = 0x0
+    static timer    streamer    = null
+
+    boolean streamWait      = false
+    boolean streamLive      = false
+    integer streamFuncler   = 0x0
+    string  streamName      = ""
+
+    method destroy takes nothing returns nothing
+        set this.streamWait = false
+        set this.streamLive = false
+
+        call this.deallocate()
+    endmethod
+
+    method break takes nothing returns thistype
+        set this.streamLive = false    
+        return this
+    endmethod
+
+    method continue takes nothing returns thistype
+        set this.streamLive = true
+        return this
+    endmethod
+
+    static method get takes nothing returns thistype
+        return kernel.kernel
+    endmethod
+
+    static method create takes nothing returns thistype
+        local thistype this = thistype.allocate()
+        set this.streamLive = true
+        set this.streamName = "Поток #" + I2S(this)
+        set thistype.kernmx = kernmx + 0x1 
+        return this
+    endmethod
+
+    static method callback takes nothing returns nothing
+        local thistype this = 0x0
+        
+        set this.kernel = 0x0
+
+        if this.kernmx > 0 then 
+            loop
+                if this.streamLive then
+                    if this.streamFuncler > 0x0 then
+                        call ExecuteCode( I2C( this.streamFuncler ) )
+                    endif
+                endif
+                set this.kernel = this.kernel + 0x1
+                exitwhen this.kernel == this.kernmx
+            endloop
+        endif
+        
+        return
+    endmethod
+
+    static method initialize takes nothing returns nothing
+        local thistype this = 0x0
+        set this.streamer = CreateTimer()
+        call TimerStart( this.streamer, 0.02, true, function thistype.callback )
+    endmethod
+endstruct
+
 library preInitialization initializer preInit
     function preInit takes nothing returns nothing
         set gGroup = CreateGroup()

@@ -21,5 +21,7 @@
 //! import "JassScripts/UjAPI/console.jass"
 //! import "JassScripts/UjAPI/vision.jass"
 
+// Место для импорта ваших библиотек или файлов скрипта)
+
 //! import "ujMain.jass"
 //! import "JassScripts/UjAPI/loader.jass"

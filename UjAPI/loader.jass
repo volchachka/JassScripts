@@ -1,6 +1,9 @@
 scope Loader initializer loader
 
     function loader takes nothing returns nothing
+        
+        call vrgbaInit()
+
         call frame.initialize()
         call tacticpoint.init()
 

@@ -5,7 +5,7 @@ struct vrgba
     integer blue    = $0
     integer alpha   = $0
 
-    string  hex     = "FFFFFF"
+    string  hex     = "FFFFFFFF"
 
     method toHex takes nothing returns thistype
         set this.hex = HexZero( IntToHex(this.alpha), 2 )
@@ -152,3 +152,55 @@ struct vrect
         return this
     endmethod
 endstruct
+
+// Особые надстройки, скорее всего)
+
+globals
+    vrgba       vcl_red     = 0x0
+    vrgba       vcl_green   = 0x0
+    vrgba       vcl_blue    = 0x0
+
+
+    vrgba       vcl_danger      = 0x0
+    vrgba       vcl_greenlight  = 0x0
+
+    vrgba array vcl_special 
+endglobals
+
+function vrgbaInit takes nothing returns nothing
+
+    set vcl_red     = vrgba.createEx( 255, 255,   3,   3 ).toHex()
+    set vcl_green   = vrgba.createEx( 255,   1, 255,   2 ).toHex()
+    set vcl_blue    = vrgba.createEx( 255,   5,   4, 255 ).toHex()
+
+    set vcl_danger      = vrgba.createEx( 255, 199,   1,   1 ).toHex()
+    set vcl_greenlight  = vrgba.createEx( 255,  55, 225,  55 ).toHex()
+
+
+    set vcl_special[0]  = vrgba.createEx( 0xff, 0xff, 0x50, 0x50 ).toHex()
+    set vcl_special[1]  = vrgba.createEx( 0xff, 0x50, 0x90, 0xff ).toHex()
+    set vcl_special[2]  = vrgba.createEx( 0xff, 0x44, 0xf7, 0xf7 ).toHex()
+    set vcl_special[3]  = vrgba.createEx( 0xff, 0xd0, 0x40, 0xd0 ).toHex()
+    set vcl_special[4]  = vrgba.createEx( 0xff, 0xff, 0xff, 0x60 ).toHex()
+    set vcl_special[5]  = vrgba.createEx( 0xff, 0xff, 0x99, 0x50 ).toHex()
+    set vcl_special[6]  = vrgba.createEx( 0xff, 0x66, 0xff, 0x66 ).toHex()
+    set vcl_special[7]  = vrgba.createEx( 0xff, 0xff, 0x90, 0xff ).toHex()
+    set vcl_special[8]  = vrgba.createEx( 0xff, 0xcf, 0xcf, 0xcf ).toHex()
+    set vcl_special[9]  = vrgba.createEx( 0xff, 0x80, 0xd0, 0xff ).toHex()
+    set vcl_special[10] = vrgba.createEx( 0xff, 0x30, 0x90, 0x70 ).toHex()
+    set vcl_special[11] = vrgba.createEx( 0xff, 0xc0, 0x70, 0x15 ).toHex()
+    
+    set vcl_special[12] = vrgba.createEx( 0xff, 0xcc, 0x60, 0x60 ).toHex()
+    set vcl_special[13] = vrgba.createEx( 0xff, 0x30, 0x90, 0xaf ).toHex()
+    set vcl_special[14] = vrgba.createEx( 0xff, 0x50, 0xff, 0xff ).toHex()
+    set vcl_special[15] = vrgba.createEx( 0xff, 0xd0, 0x60, 0xd0 ).toHex()
+    set vcl_special[16] = vrgba.createEx( 0xff, 0xff, 0xff, 0x99 ).toHex()
+    set vcl_special[17] = vrgba.createEx( 0xff, 0xff, 0x99, 0x80 ).toHex()
+    set vcl_special[18] = vrgba.createEx( 0xff, 0x90, 0xff, 0x90 ).toHex()
+    set vcl_special[19] = vrgba.createEx( 0xff, 0xff, 0x90, 0xff ).toHex()
+    set vcl_special[20] = vrgba.createEx( 0xff, 0xaf, 0xdf, 0xff ).toHex()
+    set vcl_special[21] = vrgba.createEx( 0xff, 0x88, 0x88, 0x88 ).toHex()
+    set vcl_special[22] = vrgba.createEx( 0xff, 0x40, 0xaf, 0x70 ).toHex()
+    set vcl_special[23] = vrgba.createEx( 0xff, 0xaf, 0x9f, 0x55 ).toHex()
+
+endfunction
