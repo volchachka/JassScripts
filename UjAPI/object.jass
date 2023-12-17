@@ -1,12 +1,24 @@
+globals   
+    // Надстройки для дополнительных характеристик (бонусов) 
+    constant integer UJAPI_BONUS_ATTACK     = 'AItk'  // Урон с руки
+    constant integer UJAPI_BONUS_ARMOR      = 'AId0'  // Броня
+    constant integer UJAPI_BONUS_ATTRIBUTES = 'Aamk'  // Характеристики
+endglobals
+
 struct object
     integer     processes   = 0x0
     unit        unit        = null
     mob         mob         = -1
     
-    gamer       gamer       = 0  // Default: Red Player 
+    gamer       gamer       = 0  // По умолчанию: Красный игрок 
     
     integer     handleID    = 0
     integer     typeID      = 0
+
+    // Особая переменная что-то по типу UserData )
+    // Но тут она дополнительная....
+    // Для хранения указателя на фрейм.
+    integer     interaction = 0x0
 
     method destroy takes nothing returns nothing
         if this.mob >= 0 then
@@ -28,6 +40,19 @@ struct object
         
     endmethod
     
+    method register takes integer inter returns thistype
+        set this.interaction = inter + 0x1
+        return this
+    endmethod
+
+    method getdata takes nothing returns integer
+        return this.interaction - 0x1
+    endmethod
+
+    method isRegistered takes nothing returns boolean
+        return this.interaction > 0x0
+    endmethod
+
     method operator x takes nothing returns real
         return GetWidgetX( this.unit )
     endmethod
@@ -44,8 +69,9 @@ struct object
         call SetWidgetY( this.unit, y )
     endmethod
 
-    method addAbility takes integer abilityId returns nothing
+    method addAbility takes integer abilityId returns thistype
         call UnitAddAbility( this.unit, abilityId )
+        return this
     endmethod
 
     method hasAbility takes integer abilityId returns boolean
@@ -92,67 +118,205 @@ struct object
         return IsUnitType( this.unit, UNIT_TYPE_HERO )
     endmethod 
 
-    // Правильно действует с версии v1.0.30.109 
-    method addBonusAttack takes integer addAttack returns nothing
-        local ability ab = GetUnitAbility( this.unit, 'AItk' )
-        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0) + addAttack )
-        set ab = null
+    method isInvulnerable  takes nothing returns boolean
+        return IsUnitInvulnerable( this.unit )
+    endmethod
+
+    method isVulnerable  takes nothing returns boolean
+        return not IsUnitInvulnerable( this.unit )
     endmethod
 
     // Правильно действует с версии v1.0.30.109 
-    method addBonusArmor takes integer addArmor returns nothing
-        local ability ab = GetUnitAbility( this.unit, 'AId0' )
+    method addBonusAttack takes integer addAttack returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ATTACK )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0) + addAttack )
+        set ab = null
+
+        return this
+    endmethod
+
+    method bonusAttack takes integer newAttack returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ATTACK )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_ATTACK_BONUS, 0, newAttack )
+        set ab = null
+
+        return this
+    endmethod
+    
+    // Правильно действует с версии v1.0.30.109 
+    method addBonusArmor takes integer addArmor returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ARMOR )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_DEFENSE_BONUS_IDEF, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_DEFENSE_BONUS_IDEF, 0 ) + addArmor )
         set ab = null
+
+        return this
+    endmethod
+
+    method bonusArmor takes integer newArmor returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ATTRIBUTES )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_DEFENSE_BONUS_IDEF, 0, newArmor )
+        set ab = null
+
+        return this
     endmethod
 
     // Правильно действует с версии v1.0.30.109  
-    method addBonusStr takes integer addStr returns nothing
-        local ability ab = GetUnitAbility( this.unit, 'Aamk' )
+    method addBonusStr takes integer addStr returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ARMOR )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_STRENGTH_BONUS_ISTR, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_STRENGTH_BONUS_ISTR, 0 ) + addStr )
         set ab = null
+
+        return this
+    endmethod
+
+    method bonusStr takes integer newStr returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ATTRIBUTES )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_STRENGTH_BONUS_ISTR, 0, newStr )
+        set ab = null
+
+        return this
     endmethod
 
     // Правильно действует с версии v1.0.30.109 
-    method addBonusAgi takes integer addAgi returns nothing
-        local ability ab = GetUnitAbility( this.unit, 'Aamk' )
+    method addBonusAgi takes integer addAgi returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ATTRIBUTES )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_AGILITY_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_AGILITY_BONUS, 0 ) + addAgi )
         set ab = null
+
+        return this
+    endmethod
+
+    method bonusAgi takes integer newAgi returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ATTRIBUTES )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_AGILITY_BONUS, 0, newAgi )
+        set ab = null
+
+        return this
     endmethod
 
     // Правильно действует с версии v1.0.30.109 
-    method addBonusInt takes integer addInt returns nothing
-        local ability ab = GetUnitAbility( this.unit, 'Aamk' )
+    method addBonusInt takes integer addInt returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ATTRIBUTES )
         call SetAbilityIntegerLevelField( ab, ABILITY_ILF_INTELLIGENCE_BONUS, 0, GetAbilityIntegerLevelField( ab, ABILITY_ILF_INTELLIGENCE_BONUS, 0 ) + addInt )
         set ab = null
+        
+        return this
     endmethod
 
-    method addExtraAttack takes integer addAttack returns nothing
+    method bonusInt takes integer newInt returns thistype
+        local ability ab = GetUnitAbility( this.unit, UJAPI_BONUS_ATTRIBUTES )
+        call SetAbilityIntegerLevelField( ab, ABILITY_ILF_INTELLIGENCE_BONUS, 0, newInt )
+        set ab = null
+
+        return this
+    endmethod
+
+    method addExtraAttack takes integer addAttack returns thistype
         local boolean onAttack1 = GetUnitWeaponBooleanField( this.unit, UNIT_WEAPON_BF_ATTACKS_ENABLED, 0 )
         local boolean onAttack2 = GetUnitWeaponBooleanField( this.unit, UNIT_WEAPON_BF_ATTACKS_ENABLED, 1 )
         if onAttack1 then
             call SetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0, GetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0 ) + addAttack )
         elseif onAttack2 then
             call SetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 1, GetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0 ) + addAttack )
+        elseif onAttack1 and onAttack2 then
+            call SetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0, GetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0 ) + addAttack )
+            call SetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 1, GetUnitWeaponIntegerField( this.unit, UNIT_WEAPON_IF_ATTACK_DAMAGE_BONUS, 0 ) + addAttack )
         endif
+        
+        return this
     endmethod
-    
-    method waitDestroy takes nothing returns nothing
+
+    method addbonuses takes nothing returns thistype
+        call UnitAddAbility( this.unit, UJAPI_BONUS_ARMOR )
+        call UnitAddAbility( this.unit, UJAPI_BONUS_ATTACK )
+        call UnitAddAbility( this.unit, UJAPI_BONUS_ATTRIBUTES )
+        call ShowUnitAbility( this.unit, UJAPI_BONUS_ATTRIBUTES, false )
+
+        call this.bonusAttack(0)
+        call this.bonusArmor(0)
+        call this.bonusStr(0)
+        call this.bonusAgi(0)
+        call this.bonusInt(0)
+        return this
+    endmethod
+
+    method waitDestroy takes nothing returns thistype
         local clock xclock = clock.create()
         call xclock.save ( 0,    this )
         call xclock.start( 0.05, true, function thistype.callback )
+        return this
     endmethod
     
-    method except takes nothing returns nothing
+    method except takes nothing returns thistype
         set this.processes = 0x0
+        return this
     endmethod
     
-    method invulnerable takes boolean isInvulnerable returns nothing
+    method life takes real life returns thistype
+        call SetUnitCurrentLife( this.unit, life )
+        return this
+    endmethod
+    
+    method maxlife takes real maxlife returns thistype
+        call SetUnitMaxLife( this.unit, maxlife )
+        return this
+    endmethod
+
+    method getLife takes nothing returns real
+        return GetUnitCurrentLife( this.unit )
+    endmethod
+
+    method getMaxlife takes nothing returns real
+        return GetUnitMaxLife( this.unit )
+    endmethod
+
+    method mana takes real mana returns thistype
+        call SetUnitCurrentMana( this.unit, mana )
+        return this
+    endmethod
+
+    method maxmana takes real mana returns thistype
+        call SetUnitMaxMana( this.unit, mana )
+        return this
+    endmethod
+
+    method getMana takes nothing returns real
+        return GetUnitCurrentMana( this.unit )
+    endmethod
+
+    method getMaxmana takes nothing returns real
+        return GetUnitMaxMana( this.unit )
+    endmethod
+
+    method invulnerability takes boolean isInvulnerable returns thistype
         call SetUnitInvulnerable( this.unit, isInvulnerable )
+        return this
     endmethod
     
+    method invulnerable takes nothing returns thistype
+        call SetUnitInvulnerable( this.unit, true )
+        return this
+    endmethod
+
+    method vulnerable takes nothing returns thistype
+        call SetUnitInvulnerable( this.unit, false )
+        return this
+    endmethod
+
     static method get takes unit data returns thistype
         return GetUnitUserData( data ) - 1
+    endmethod
+
+    static method trigger takes nothing returns thistype
+        return GetUnitUserData( GetTriggerUnit() ) - 1
+    endmethod
+
+    static method attacker takes nothing returns thistype
+        return GetUnitUserData( GetAttacker() ) - 1
+    endmethod
+
+    static method damager takes nothing returns thistype
+        return GetUnitUserData( GetEventDamageSource() ) - 1
     endmethod
 
     static method filter takes nothing returns thistype
@@ -163,24 +327,74 @@ struct object
         return GetUnitUserData( GetEnumUnit() ) - 1
     endmethod
 
-    method silence takes nothing returns nothing
-        call UnitApplySilence( this.unit, true )
+    static method speller takes nothing returns thistype
+        return GetUnitUserData( GetSpellAbilityUnit() ) - 1
     endmethod
 
-    method unSilence takes nothing returns nothing
+    static method spellTarget takes nothing returns thistype
+        return GetUnitUserData( GetSpellTargetUnit() ) - 1
+    endmethod
+
+    static method dead takes nothing returns thistype
+        return GetUnitUserData( GetDyingUnit() ) - 1
+    endmethod
+
+    method reviveme takes nothing returns thistype
+        call ReviveHero( this.unit, GetUnitX( this.unit ), GetUnitY( this.unit ), false )
+        return this
+    endmethod
+
+    method revive takes vec3 v3, boolean withLight returns thistype
+        call ReviveHero( this.unit, v3.x, v3.y, withLight )
+        if v3.autoDestroy then
+            call v3.destroy()
+        endif
+        return this
+    endmethod
+
+    method full takes nothing returns thistype
+        call SetUnitCurrentLife( this.unit, GetUnitMaxLife( this.unit ) )
+        call SetUnitCurrentMana( this.unit, GetUnitMaxMana( this.unit ) )
+        return this
+    endmethod
+
+    method silence takes nothing returns thistype
+        call UnitApplySilence( this.unit, true )
+        return this
+    endmethod
+
+    method unSilence takes nothing returns thistype
         call UnitApplySilence( this.unit, false )
+        return this
     endmethod
     
     // Предупреждение!
     // Только для одиночной игры 
-    method share takes gamer gmr returns nothing
+    method share takes gamer gmr returns thistype
         call SetUnitVisibleByPlayer( this.unit, gmr.player, true )
+        return this
     endmethod
 
     // Предупреждение!
     // Только для одиночной игры 
-    method unshare takes gamer gmr returns nothing
+    method unshare takes gamer gmr returns thistype
         call SetUnitVisibleByPlayer( this.unit, gmr.player, false )
+        return this
+    endmethod
+
+    method attack takes object who returns thistype
+        call IssueTargetOrderById( this.unit, 851983, who.unit )
+        return this
+    endmethod
+
+    method talk takes string says, real time returns nothing
+        local integer triggerId = GetHandleId( blizzTalk.trigger )
+        
+        call SaveInteger( Unryze, triggerId, 0, this )
+        call SaveStr( Unryze, triggerId, 0, says )
+        call SaveReal( Unryze, triggerId, 0, time )
+
+        call blizzTalk.exec()
     endmethod
 
     static method create takes unit wUnit returns thistype
@@ -257,3 +471,138 @@ struct objectlist
         return this
     endmethod
 endstruct
+
+struct decoration
+    destructable destructable   = null
+    integer      typeID         = 0x0
+
+    // Особая переменная что-то по типу UserData )
+    integer      interaction    = 0x0
+    
+    method register takes integer inter returns thistype
+        set this.interaction = inter + 0x1
+        return this
+    endmethod
+
+    method getdata takes nothing returns integer
+        return this.interaction - 0x1
+    endmethod
+
+    method isRegistered takes nothing returns boolean
+        return this.interaction > 0x0
+    endmethod
+
+    method getLife takes nothing returns real
+        return GetDestructableLife( this.destructable )
+    endmethod
+
+    method life takes real life returns thistype
+        call SetDestructableLife( this.destructable, life )
+        return this
+    endmethod
+
+    method getMaxLife takes nothing returns real
+        return GetDestructableMaxLife( this.destructable )
+    endmethod
+
+    method maxlife takes real maxLife returns thistype
+        call SetDestructableMaxLife( this.destructable, maxLife )
+        return this
+    endmethod
+
+    method isAlive takes nothing returns boolean
+        return GetDestructableLife( this.destructable ) <= 0.
+    endmethod
+
+    method isDead takes nothing returns boolean
+        return GetDestructableLife( this.destructable ) <= 0.
+    endmethod
+
+    method restore takes nothing returns thistype
+        call DestructableRestoreLife( this.destructable, GetDestructableMaxLife(this.destructable), false )
+        return this
+    endmethod
+
+    method update takes nothing returns thistype
+        call SetDestructableLife( this.destructable, GetDestructableMaxLife(this.destructable) )
+        return this
+    endmethod
+
+    method resurrect takes nothing returns thistype
+        call DestructableRestoreLife( this.destructable, GetDestructableMaxLife(this.destructable), true )
+        return this
+    endmethod
+
+    method vulnerable takes boolean isVulnerable returns thistype
+        call SetDestructableInvulnerable( this.destructable, not isVulnerable )
+        return this
+    endmethod
+
+    method visible takes boolean isVisible returns thistype
+        call ShowDestructable( this.destructable, isVisible )
+        return this
+    endmethod
+
+    method kill takes nothing returns thistype
+        call KillDestructable( this.destructable )
+        return this
+    endmethod
+
+    method anim takes string wAnim returns thistype
+        call SetDestructableAnimation( this.destructable, wAnim )
+        return this
+    endmethod
+
+    method skin takes string modelFile returns thistype
+        call SetDestructableModel( this.destructable, modelFile )
+        return this
+    endmethod
+
+    method skintc takes string modelFile, integer playerID returns thistype
+        call SetDestructableModelEx( this.destructable, modelFile, playerID )
+        return this
+    endmethod
+
+    static method get takes nothing returns thistype
+        return LoadInteger( UjAPI, GetHandleId(GetTriggerDestructable()), 0x0 ) - 0x1
+    endmethod
+
+    static method createEx takes integer typeId, real x, real y, real f, real sc, integer var returns thistype
+        local thistype this = thistype.allocate()
+
+            set this.destructable = CreateDestructable( typeId, x, y, f, sc, var )
+            set this.typeID       = typeId
+
+            call SaveInteger( UjAPI, GetHandleId(this.destructable), 0x0, this + 0x1)
+
+        return this
+    endmethod
+
+    static method create takes destructable d returns thistype
+        local thistype this = thistype.allocate()
+
+            set this.destructable = d
+            set this.typeID       = GetDestructableTypeId( d )
+
+            call SaveInteger( UjAPI, GetHandleId(d), 0x0, this + 0x1)
+
+        return this
+    endmethod
+endstruct
+
+function didrActionFunc takes nothing returns nothing
+    call KillDestructable( GetEnumDestructable() )    
+endfunction
+
+function diirActionFunc takes nothing returns nothing
+    call SetDestructableInvulnerable( GetEnumDestructable(), true )    
+endfunction
+
+function destructableDestroyInRect takes rect rct returns nothing
+    call EnumDestructablesInRect( rct, null, function diirActionFunc )
+endfunction
+
+function destructableInvunerableInRect takes rect rct returns nothing
+    call EnumDestructablesInRect( rct, null, function diirActionFunc )
+endfunction
+

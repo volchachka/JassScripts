@@ -1,3 +1,7 @@
+globals
+    game blizzTalk = 0x0
+endglobals
+
 struct game
     static boolean              active      = false
     static gamer        array   gamers
@@ -50,74 +54,165 @@ struct game
                 return LoadInteger( UjAPI, GetHandleId( GetTriggeringTrigger() ), 0 ) - 1
             endmethod
 
-            method lag takes real timeout returns nothing
+            method lag takes real timeout returns thistype
                 call TriggerRegisterTimerEvent( this.trigger, timeout, false )
+                return this
             endmethod
             
-            method interval takes real timeout returns nothing
+            method interval takes real timeout returns thistype
                 call TriggerRegisterTimerEvent( this.trigger, timeout, true )
+                return this
             endmethod
             
-            method disable takes nothing returns nothing
+            method disable takes nothing returns thistype
                 call DisableTrigger( this.trigger )
+                return this
             endmethod
             
-            method enable takes nothing returns nothing
+            method enable takes nothing returns thistype
                 call EnableTrigger(  this.trigger )
+                return this
             endmethod
             
-            method action takes code handlerFunc returns nothing
+            method exec takes nothing returns nothing
+                call TriggerExecute(  this.trigger )
+            endmethod
+
+            method action takes code handlerFunc returns thistype
                 set this.triggeraction = TriggerAddAction( this.trigger, handlerFunc)
+                return this
             endmethod
             
-            method condition takes code handlerFunc returns nothing
+            method condition takes code handlerFunc returns thistype
                 set this.conditionfunc = Condition( handlerFunc )
                 set this.triggercondition = TriggerAddCondition( this.trigger, this.conditionfunc )
+                return this
             endmethod
             
-            method conditionZ takes conditionfunc cf returns nothing
+            method conditionZ takes conditionfunc cf returns thistype
                 set this.triggercondition = TriggerAddCondition( this.trigger, cf )
+                return this
             endmethod
             
-            method unitsEvent takes gamer gmr, playerunitevent playerUnitEvent returns nothing
+            method unitsEvent takes gamer gmr, playerunitevent playerUnitEvent returns thistype
                 call TriggerRegisterPlayerUnitEvent( this.trigger, gmr.player, playerUnitEvent, null )
+                return this 
             endmethod
             
-            method unitsEventEx takes gamer gmr, playerunitevent playerUnitEvent, code handlerFunc returns nothing
+            method unitsEventEx takes gamer gmr, playerunitevent playerUnitEvent, code handlerFunc returns thistype
                 if this.filterfunc == null then
                     set this.filterfunc = Filter(handlerFunc)
                 endif
                 call TriggerRegisterPlayerUnitEvent( this.trigger, gmr.player, playerUnitEvent, this.filterfunc )
+                return this 
             endmethod
             
-            method unitEvent takes object obj, unitevent unitEv3nt returns nothing
+            method unitEvent takes object obj, unitevent unitEv3nt returns thistype
                 call TriggerRegisterUnitEvent( this.trigger, obj.unit, unitEv3nt )
+                return this 
             endmethod
             
-            method enterPoint takes tacticpoint tp returns nothing
+            method enterPoint takes tacticpoint tp returns thistype
                 call TriggerRegisterEnterRegion( this.trigger, tp.point, null )
+                return this 
             endmethod
 
-            method enterPointEx takes tacticpoint tp, code handlerFunc returns nothing
+            method enterPointEx takes tacticpoint tp, code handlerFunc returns thistype
                 if this.filterfunc == null then
                     set this.filterfunc = Filter(handlerFunc)
                 endif
                 call TriggerRegisterEnterRegion( this.trigger, tp.point, this.filterfunc )
+                return this 
             endmethod
 
-            method leavePoint takes tacticpoint tp returns nothing
+            method leavePoint takes tacticpoint tp returns thistype
                 call TriggerRegisterLeaveRegion( this.trigger, tp.point, null )
+                return this 
             endmethod
 
-            method frameClick takes frame wFrame returns nothing
-                call TriggerRegisterFrameEvent( this.trigger, wFrame.frame, FRAMEEVENT_CONTROL_CLICK )    
+            method frameClick takes frame wFrame returns thistype
+                call TriggerRegisterFrameEvent( this.trigger, wFrame.frame, FRAMEEVENT_CONTROL_CLICK )
+                return this    
             endmethod
 
-            method leavePointEx takes tacticpoint tp, code handlerFunc returns nothing
+            method leavePointEx takes tacticpoint tp, code handlerFunc returns thistype
                 if this.filterfunc == null then
                     set this.filterfunc = Filter(handlerFunc)
                 endif
                 call TriggerRegisterLeaveRegion( this.trigger, tp.point, this.filterfunc )
+                return this
+            endmethod
+
+            method spellEffect takes object obj returns thistype
+                call TriggerRegisterUnitEvent( this.trigger, obj.unit, EVENT_UNIT_SPELL_EFFECT )
+                return this
+            endmethod
+
+            method damaged takes object whichObject returns thistype
+                call TriggerRegisterUnitEvent( this.trigger, whichObject.unit, EVENT_UNIT_DAMAGED )
+                return this
+            endmethod
+
+            method gamerChat takes gamer gmr, string msg returns thistype
+                call TriggerRegisterPlayerChatEvent( this.trigger, gmr.player, msg, true )
+                return this                
+            endmethod
+
+            method gamerChatEx takes gamer gmr, string msg, boolean exactMatchOnly returns thistype
+                call TriggerRegisterPlayerChatEvent( this.trigger, gmr.player, msg, exactMatchOnly )
+                return this                
+            endmethod
+
+            method chat takes string msg returns thistype
+                local integer index = 0x0
+
+                loop
+                    if thistype.gamers[index].flag then
+                        call TriggerRegisterPlayerChatEvent( this.trigger, thistype.gamers[index].player, msg, true )
+                    endif
+                    set index = index + 0x1
+                    exitwhen index == bj_MAX_PLAYERS
+                endloop
+                return this
+            endmethod
+
+            method chatEx takes string msg, boolean exactMatchOnly returns thistype
+                local integer index = 0x0
+
+                loop
+                    if thistype.gamers[index].flag then
+                        call TriggerRegisterPlayerChatEvent( this.trigger, thistype.gamers[index].player, msg, exactMatchOnly )
+                    endif
+                    set index = index + 0x1
+                    exitwhen index == bj_MAX_PLAYERS
+                endloop
+                return this
+            endmethod
+
+            method allDamaged takes nothing returns thistype
+                local integer index = 0x0
+
+                loop
+                    if thistype.gamers[index].flag then
+                        call TriggerRegisterPlayerUnitEvent( this.trigger, thistype.gamers[index].player, EVENT_PLAYER_UNIT_DAMAGED, null )
+                    endif
+                    set index = index + 0x1
+                    exitwhen index == bj_MAX_PLAYERS
+                endloop
+                return this
+            endmethod
+
+            method damagedGamer takes gamer gmr returns thistype
+                call TriggerRegisterPlayerUnitEvent( this.trigger, gmr.player, EVENT_PLAYER_UNIT_DAMAGED, null )
+                return this
+            endmethod
+
+            method damagedGamerEx takes gamer gmr, code handlerFunc returns thistype
+                if this.filterfunc == null then
+                    set this.filterfunc = Filter(handlerFunc)
+                endif
+                call TriggerRegisterPlayerUnitEvent( this.trigger, gmr.player, EVENT_PLAYER_UNIT_DAMAGED, this.filterfunc )
+                return this
             endmethod
 
             static method shutdown takes nothing returns nothing
@@ -136,3 +231,16 @@ struct game
             endmethod
 
 endstruct
+
+function blizzTalker takes nothing returns nothing
+    local integer   triggerId   = GetHandleId( blizzTalk.trigger )
+    local object    talker      = LoadInteger( Unryze, triggerId, 0 )
+
+    call TransmissionFromUnitWithNameBJ( GetPlayersAll(), talker.unit, GetUnitName( talker.unit), null, LoadStr( Unryze, triggerId, 0 ), bj_TIMETYPE_SET, LoadReal( Unryze, triggerId, 0 ), true )
+
+    return
+endfunction
+
+function gamePerksInit takes nothing returns nothing
+    set blizzTalk = game.create().action(function blizzTalker )
+endfunction

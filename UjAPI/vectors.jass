@@ -40,6 +40,8 @@ struct vec3
     real y = 0.
     real z = 0.
 
+    boolean autoDestroy = false
+
     method destroy takes nothing returns nothing
         set this.x = 0.
         set this.y = 0.
@@ -60,6 +62,11 @@ struct vec3
         local thistype this = thistype.allocate()
             set this.x = GetRectCenterX(rt)
             set this.y = GetRectCenterX(rt)
+        return this
+    endmethod
+
+    method autodestroy takes nothing returns thistype
+        set this.autoDestroy = true
         return this
     endmethod
 

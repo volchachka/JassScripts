@@ -14,3 +14,57 @@
 - Обновлены некоторые методы 
 [loader.jass]
 - Добавлена инициализация "call vrgbaInit()" в прогрузчик-инициализатор Loader
+
+Обновление v0.11
+
+[object.jass]
+- Добавлена структура decoration
+- Добавлены особые методы в структуру object, что есть и в decoration
+- Добавлены методы в структуру object
+ * trigger() -> object
+ * attacker() -> object
+ * damager() -> object
+ * attack( object ) -> object 
+ * talk( string, real ) -> nothing
+ * life( real ) -> object
+ * getLife() -> real
+ * mana( real ) -> object
+ * getMana() -> real
+ * trigger() -> object
+ * speller() -> object
+ * spellTarget() -> object
+ * invulnerable переименован в invulnerability
+ * invulnerable() -> object
+ * vulnerable() -> object
+ * maxlife( real ) -> object
+ * getMaxlife() -> real
+ * maxmana( real ) -> object
+ * getMaxmana() -> real
+ * bonusStr( integer ) -> object
+ * bonusAgi( integer ) -> object
+ * bonusInt( integer ) -> object
+- Добавлены константы
+ * UJAPI_BONUS_ATTACK -> integer
+ * UJAPI_BONUS_ARMOR -> integer
+ * UJAPI_BONUS_ATTRIBUTES -> integer
+
+[game.jass]
+- Добавлены методы в game
+ * damaged( object ) -> game
+ * allDamaged() -> game
+ * damagedGamer( gamer ) -> game
+ * damagedGamerEx( gamer, code ) -> game
+ * gamerChat( gamer, string ) -> game
+ * gamerChatEx( gamer, string, boolean ) -> game
+ * chat( string ) -> game
+ * chatEx( string, boolean ) -> game
+ * exec() -> nothing
+
+- Добавлена функция, взаимосвязанная с object.talk()
+
+[loader.jass]
+- Добавлена инициализация "call gamePerksInit()" 
+
+[vectors.jass]
+- Добавлен метод в vec3
+ * autodestroy() -> vec3

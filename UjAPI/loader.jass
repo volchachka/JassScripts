@@ -6,7 +6,8 @@ scope Loader initializer loader
 
         call frame.initialize()
         call tacticpoint.init()
-
+        
+        call gamePerksInit()
         call TOCs()
         call SetConsoleSettings()
         call GameStart()
